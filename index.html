@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AuraWall | 質感社群貼文牆</title>
+  <meta name="description" content="AuraWall 是一個具備極致美感與磨砂玻璃風格的社群貼文牆，支援動態點讚、即時留言、標籤篩選與雙色主題切換。">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <div class="app-container" id="app-main-container">
+
+    <aside class="sidebar">
+
+      <div class="brand-section">
+        <div class="logo-circle">A</div>
+        <span class="brand-name">AuraWall</span>
+      </div>
+
+      <div class="profile-card glass-panel">
+        <div class="avatar-wrapper">
+          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"
+            alt="用戶頭像" class="user-avatar-lg" id="profile-avatar-img">
+        </div>
+        <h2 class="profile-name" id="profile-display-name">
+          Aura User
+          <i class="fa-solid fa-circle-check badge-official" title="已驗證用戶"></i>
+        </h2>
+        <span class="profile-handle" id="profile-display-handle">@aura_explorer</span>
+
+        <div class="profile-stats">
+          <div class="stat-item">
+            <span class="stat-val" id="stats-posts-count">0</span>
+            <span class="stat-lbl">發布貼文</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-val" id="stats-likes-count">0</span>
+            <span class="stat-lbl">獲得讚數</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-val" id="stats-bookmarks-count">0</span>
+            <span class="stat-lbl">收藏貼文</span>
+          </div>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu glass-panel">
+        <button class="menu-item active" id="menu-feed">
+          <i class="fa-solid fa-house"></i>
+          <span>動態牆</span>
+        </button>
+        <button class="menu-item" id="menu-bookmarks">
+          <i class="fa-solid fa-bookmark"></i>
+          <span>我的收藏</span>
+        </button>
+        <button class="menu-item" id="menu-about">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>關於本站</span>
+        </button>
+      </nav>
+
+      <div class="footer-widget glass-panel">
+        <span class="theme-switch-title">深色模式</span>
+        <button class="btn-toggle-theme" id="btn-theme-toggle" aria-label="切換主題">
+          <div class="theme-slider-thumb">
+            <i class="fa-solid fa-moon" id="theme-icon"></i>
+          </div>
+        </button>
+      </div>
+
+    </aside>
+
+    <main class="main-content">
+
+      <header class="main-header">
+        <div class="header-top">
+          <div class="header-title-wrapper">
+            <h1 id="feed-title">精彩動態</h1>
+            <p id="feed-subtitle">探索社群的最新靈感與精彩瞬間</p>
+          </div>
+
+          <div class="search-container">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="搜尋貼文內容、作者..." class="search-input" id="search-input">
+          </div>
+        </div>
+
+        <div class="filter-tabs-row">
+          <div class="filter-tabs" id="filter-tabs-container">
+            <button class="tab-btn active" id="tab-latest">最新貼文</button>
+            <button class="tab-btn" id="tab-popular">熱門排行</button>
+          </div>
+
+          <div class="active-filter-badge" id="active-filter-badge">
+            <span>正在篩選: <strong id="active-filter-text">#Design</strong></span>
+            <button id="btn-clear-filter" title="清除篩選"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        </div>
+      </header>
+
+      <div class="create-post-card glass-panel" id="create-post-area">
+        <div class="create-post-header">
+          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"
+            alt="使用者頭像" class="user-avatar-sm" id="post-creator-avatar">
+          <div class="post-textarea-wrapper">
+            <textarea placeholder="分享今天的新新鮮事與美好靈感..." class="create-post-textarea" id="post-input-text"></textarea>
+          </div>
+        </div>
+
+        <div class="create-post-attachments">
+
+          <div class="image-preview-container" id="image-preview-box">
+            <img src="" alt="預覽圖片" class="image-preview-img" id="image-preview-img">
+            <button class="btn-remove-preview" id="btn-remove-image-preview" title="移除圖片">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <div class="post-tags-input-container" id="post-tags-input-container">
+            <input type="text" placeholder="+ 新增標籤 (按下 Enter)" class="input-add-tag" id="input-add-tag">
+          </div>
+
+        </div>
+
+        <div class="image-url-popup" id="image-url-popup">
+          <div class="url-popup-header">
+            <h4>添加圖片附件</h4>
+            <button class="btn-close-modal" id="btn-close-url-popup" style="width:24px; height:24px;"><i
+                class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="url-input-row">
+            <input type="text" placeholder="輸入圖片 URL (https://...)" id="input-image-url">
+            <button class="btn-popup-confirm" id="btn-confirm-image-url">確認</button>
+          </div>
+          <div class="random-images-grid" id="random-preset-grid">
+          </div>
+        </div>
+
+        <div class="emoji-picker-popup" id="emoji-picker-popup">
+          <div class="emoji-grid" id="emoji-grid">
+          </div>
+        </div>
+
+        <div class="create-post-footer">
+          <div class="post-tools">
+            <button class="tool-btn" id="btn-trigger-image-popup" data-tooltip="添加圖片">
+              <i class="fa-regular fa-image"></i>
+            </button>
+            <button class="tool-btn" id="btn-trigger-emoji-popup" data-tooltip="插入表情符號">
+              <i class="fa-regular fa-face-smile"></i>
+            </button>
+          </div>
+
+          <button class="btn-publish" id="btn-publish-post">
+            <i class="fa-solid fa-paper-plane"></i>
+            <span>發佈動態</span>
+          </button>
+        </div>
+      </div>
+
+      <section class="posts-feed-container" id="posts-feed">
+      </section>
+
+    </main>
+
+    <aside class="widgets">
+
+      <div class="widget-card glass-panel">
+        <h3 class="widget-title">
+          <i class="fa-solid fa-chart-line" style="color: var(--tag-text);"></i>
+          社群看板數據
+        </h3>
+        <div class="widget-stats-grid">
+          <div class="widget-stat-card">
+            <span class="widget-stat-num" id="total-platform-posts">0</span>
+            <span class="widget-stat-lbl">全站貼文數</span>
+          </div>
+          <div class="widget-stat-card">
+            <span class="widget-stat-num" id="total-platform-likes">0</span>
+            <span class="widget-stat-lbl">累積按讚次數</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="widget-card glass-panel">
+        <h3 class="widget-title">
+          <i class="fa-solid fa-fire" style="color: #ff7e40;"></i>
+          熱門社群標籤
+        </h3>
+        <div class="tag-cloud" id="hot-tags-cloud">
+        </div>
+      </div>
+
+      <div class="widget-card glass-panel">
+        <h3 class="widget-title">
+          <i class="fa-solid fa-user-plus" style="color: #10b981;"></i>
+          推薦追蹤
+        </h3>
+        <div class="who-to-follow-list" id="recommendations-list">
+        </div>
+      </div>
+
+    </aside>
+
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
