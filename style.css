@@ -1811,3 +1811,64 @@ textarea {
 .auth-container {
   transition: opacity var(--transition-slow);
 }
+
+/* 解決深色模式下，推薦追蹤按鈕文字看不見的問題 */
+[data-theme="dark"] .who-to-follow-list button,
+[data-theme="dark"] .recommend-btn,
+[data-theme="dark"] .follow-btn {
+  color: #ffffff !important;
+  /* 強制讓按鈕文字在深色模式下顯示為白色 */
+  opacity: 1 !important;
+  /* 防止文字因為透明度設定過低而看不清 */
+}
+
+/* ====== 表情符號彈出視窗基礎與顯示樣式 ====== */
+
+/* 1. 當 JS 幫視窗加上 active 類別時，強制顯示出來 */
+#emoji-picker-popup.active,
+.emoji-picker-popup.active {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* 2. 優化表情符號彈出視窗的排版與位置 */
+#emoji-picker-popup {
+  position: absolute;
+  bottom: 60px;
+  /* 讓它浮在發文工具列的上方 */
+  left: 20px;
+  background: rgba(30, 30, 40, 0.95);
+  /* 深色磨砂玻璃背景 */
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px;
+  width: 280px;
+  max-height: 200px;
+  overflow-y: auto;
+  /* 超過高度時允許滾動觀看 */
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  z-index: 999;
+  /* 確保不會被其他貼文擋住 */
+}
+
+/* 3. 表情符號網格排版 (讓表情符號排整齊) */
+#emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  /* 一行排 7 個表情 */
+  gap: 6px;
+  text-align: center;
+}
+
+/* 4. 滑鼠游標移過去表情時的放大與漸變效果 */
+.emoji-item {
+  transition: transform 0.2s, background 0.2s;
+  border-radius: 6px;
+}
+
+.emoji-item:hover {
+  transform: scale(1.2);
+  background: rgba(255, 255, 255, 0.15);
+}

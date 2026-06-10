@@ -37,15 +37,15 @@
         <div class="profile-stats">
           <div class="stat-item">
             <span class="stat-val" id="stats-posts-count">0</span>
-            <span class="stat-lbl">發布貼文</span>
+            <span class="stat-lbl">貼文</span>
           </div>
           <div class="stat-item">
             <span class="stat-val" id="stats-likes-count">0</span>
-            <span class="stat-lbl">獲得讚數</span>
+            <span class="stat-lbl">粉絲</span>
           </div>
           <div class="stat-item">
             <span class="stat-val" id="stats-bookmarks-count">0</span>
-            <span class="stat-lbl">收藏貼文</span>
+            <span class="stat-lbl">追蹤</span>
           </div>
         </div>
       </div>
@@ -128,30 +128,13 @@
 
         </div>
 
-        <div class="image-url-popup" id="image-url-popup">
-          <div class="url-popup-header">
-            <h4>添加圖片附件</h4>
-            <button class="btn-close-modal" id="btn-close-url-popup" style="width:24px; height:24px;"><i
-                class="fa-solid fa-xmark"></i></button>
-          </div>
-          <div class="url-input-row">
-            <input type="text" placeholder="輸入圖片 URL (https://...)" id="input-image-url">
-            <button class="btn-popup-confirm" id="btn-confirm-image-url">確認</button>
-          </div>
-          <div class="random-images-grid" id="random-preset-grid">
-          </div>
-        </div>
-
-        <div class="emoji-picker-popup" id="emoji-picker-popup">
-          <div class="emoji-grid" id="emoji-grid">
-          </div>
-        </div>
-
         <div class="create-post-footer">
           <div class="post-tools">
             <button class="tool-btn" id="btn-trigger-image-popup" data-tooltip="添加圖片">
               <i class="fa-regular fa-image"></i>
             </button>
+            <input type="file" id="file-upload-input" accept="image/*" style="display: none;">
+
             <button class="tool-btn" id="btn-trigger-emoji-popup" data-tooltip="插入表情符號">
               <i class="fa-regular fa-face-smile"></i>
             </button>

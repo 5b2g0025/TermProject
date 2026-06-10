@@ -44,15 +44,6 @@ let posts = [
   }
 ];
 
-// 預設快捷圖片庫 (供發文時快速點選附加)
-const PRESET_POST_IMAGES = [
-  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500",
-  "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=500",
-  "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=500",
-  "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=500",
-  "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=500"
-];
-
 // 預設表情符號清單
 const PRESET_EMOJIS = ["😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚", "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🤩", "🥳", "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "☹️", "😣", "😖", "😫", "😩", "🥺", "😢", "😭", "😤", "😠", "😡", "🤬", "🤯", "😳", "🥵", "🥶", "😱", "😨", "😰", "😥", "😓", "🤗", "🤔", "🤭", "🤫", "🤥", "😶", "😐", "😑", "😬", "🙄", "😯", "😦", "😧", "😮", "😲", "🥱", "😴", "🤤", "😪", "😵", "🤐", "🥴", "🤢", "🤮", "🤧", "😷", "🤒", "🤕", "🤑", "🤠", "😈", "👿", "👹", "👺", "🤡", "💩", "👻", "💀", "☠️", "👽", "👾", "🤖", "🎃", "😺", "😸", "😹", "😻", "😼", "😽", "🙀", "😿", "😾"];
 
@@ -324,17 +315,17 @@ function renderPosts() {
   if (currentMenuTab === 'about') {
     elements.activeFilterBadge.style.display = 'none';
     elements.postsFeed.innerHTML = `
-            <div class="glass-panel" style="padding: 24px; line-height: 1.8; color: var(--color-text);">
-                <h3 style="margin-bottom: 12px; color: var(--tag-text);"><i class="fa-solid fa-wand-magic-sparkles"></i> AuraWall 無邊界美學社群牆</h3>
-                <p style="margin-bottom: 12px;">這是一個基於純前端技術打造的 Glassmorphism（玻璃擬態）質感示範牆。本版本已徹底移除了資料庫與伺服器登入限制，提供全功能解鎖的貼文發布、留言回覆、貼文收藏與即時標籤統計體驗。</p>
-                <h4 style="margin-top: 16px; margin-bottom: 6px;">💡 技術棧要點</h4>
-                <ul style="padding-left: 20px;">
-                    <li><strong>CSS 磨砂特質：</strong> 運用 backdrop-filter 結合半透明線條與飽和度控制。</li>
-                    <li><strong>無痛操控：</strong> 完全移除了登入校對，採用動態陣列維護狀態。</li>
-                    <li><strong>行動端優化：</strong> 支援大螢幕三欄、平板雙欄及手機底部跨載具 UI 切換。</li>
-                </ul>
-            </div>
-        `;
+              <div class="glass-panel" style="padding: 24px; line-height: 1.8; color: var(--color-text);">
+                  <h3 style="margin-bottom: 12px; color: var(--tag-text);"><i class="fa-solid fa-wand-magic-sparkles"></i> AuraWall 無邊界美學社群牆</h3>
+                  <p style="margin-bottom: 12px;">這是一個基於純前端技術打造的 Glassmorphism（玻璃擬態）質感示範牆。本版本已徹底移除了資料庫與伺服器登入限制，提供全功能解鎖的貼文發布、留言回覆、貼文收藏與即時標籤統計體驗。</p>
+                  <h4 style="margin-top: 16px; margin-bottom: 6px;">💡 技術棧要點</h4>
+                  <ul style="padding-left: 20px;">
+                      <li><strong>CSS 磨砂特質：</strong> 運用 backdrop-filter 結合半透明線條與飽和度控制。</li>
+                      <li><strong>無痛操控：</strong> 完全移除了登入校對，採用動態陣列維護狀態。</li>
+                      <li><strong>行動端優化：</strong> 支援大螢幕三欄、平板雙欄及手機底部跨載具 UI 切換。</li>
+                  </ul>
+              </div>
+          `;
     return;
   }
 
@@ -373,11 +364,11 @@ function renderPosts() {
   // 查無資料空狀態展示
   if (filtered.length === 0) {
     elements.postsFeed.innerHTML = `
-            <div style="text-align: center; padding: 60px 20px; color: var(--color-text-muted);">
-                <i class="fa-regular fa-folder-open" style="font-size: 36px; margin-bottom: 12px; display:block;"></i>
-                這裡目前沒有符合條件的動態貼文喔
-            </div>
-        `;
+              <div style="text-align: center; padding: 60px 20px; color: var(--color-text-muted);">
+                  <i class="fa-regular fa-folder-open" style="font-size: 36px; margin-bottom: 12px; display:block;"></i>
+                  這裡目前沒有符合條件的動態貼文喔
+              </div>
+          `;
     return;
   }
 
@@ -387,56 +378,56 @@ function renderPosts() {
     card.className = 'post-card glass-panel';
 
     const mediaHtml = post.image ? `
-            <div class="post-media-box">
-                <img src="${post.image}" alt="附圖" loading="lazy">
-            </div>
-        ` : '';
+              <div class="post-media-box">
+                  <img src="${post.image}" alt="附圖" loading="lazy">
+              </div>
+          ` : '';
 
     const tagsHtml = post.tags.map(t => `<span class="post-tag">#${t}</span>`).join(' ');
     const commentsHtml = post.comments.map(c => `
-            <div class="comment-item">
-                <strong>${c.authorName}:</strong> <span>${c.content}</span>
-            </div>
-        `).join('');
+              <div class="comment-item">
+                  <strong>${c.authorName}:</strong> <span>${c.content}</span>
+              </div>
+          `).join('');
 
     card.innerHTML = `
-            <div class="post-card-header">
-                <img src="${post.authorAvatar}" alt="頭像" class="user-avatar-sm">
-                <div class="post-author-info">
-                    <h4 class="author-name">${post.authorName}</h4>
-                    <span class="author-handle">${post.authorHandle}</span>
-                </div>
-                <span class="post-time">${formatTimeAgo(post.timestamp)}</span>
-            </div>
-            
-            <div class="post-card-body">
-                <p class="post-main-text">${linkifyTags(post.content)}</p>
-                ${mediaHtml}
-                <div class="post-tags-list">${tagsHtml}</div>
-            </div>
-            
-            <div class="post-card-actions">
-                <button class="action-btn btn-like ${post.isLiked ? 'active' : ''}">
-                    <i class="${post.isLiked ? 'fa-solid' : 'fa-regular'} fa-heart"></i>
-                    <span class="count">${post.likes}</span>
-                </button>
-                <button class="action-btn btn-comment-trigger">
-                    <i class="fa-regular fa-comment"></i>
-                    <span class="count">${post.comments.length}</span>
-                </button>
-                <button class="action-btn btn-bookmark ${post.isBookmarked ? 'active' : ''}" style="margin-left: auto;">
-                    <i class="${post.isBookmarked ? 'fa-solid' : 'fa-regular'} fa-bookmark"></i>
-                </button>
-            </div>
-
-            <div class="comments-section" style="display: none;">
-                <div class="comments-list-box">${commentsHtml}</div>
-                <div class="comment-input-row">
-                    <input type="text" placeholder="寫下你的溫暖回應..." class="input-new-comment">
-                    <button class="btn-send-comment"><i class="fa-solid fa-paper-plane"></i></button>
-                </div>
-            </div>
-        `;
+              <div class="post-card-header">
+                  <img src="${post.authorAvatar}" alt="頭像" class="user-avatar-sm">
+                  <div class="post-author-info">
+                      <h4 class="author-name">${post.authorName}</h4>
+                      <span class="author-handle">${post.authorHandle}</span>
+                  </div>
+                  <span class="post-time">${formatTimeAgo(post.timestamp)}</span>
+              </div>
+              
+              <div class="post-card-body">
+                  <p class="post-main-text">${linkifyTags(post.content)}</p>
+                  ${mediaHtml}
+                  <div class="post-tags-list">${tagsHtml}</div>
+              </div>
+              
+              <div class="post-card-actions">
+                  <button class="action-btn btn-like ${post.isLiked ? 'active' : ''}">
+                      <i class="${post.isLiked ? 'fa-solid' : 'fa-regular'} fa-heart"></i>
+                      <span class="count">${post.likes}</span>
+                  </button>
+                  <button class="action-btn btn-comment-trigger">
+                      <i class="fa-regular fa-comment"></i>
+                      <span class="count">${post.comments.length}</span>
+                  </button>
+                  <button class="action-btn btn-bookmark ${post.isBookmarked ? 'active' : ''}" style="margin-left: auto;">
+                      <i class="${post.isBookmarked ? 'fa-solid' : 'fa-regular'} fa-bookmark"></i>
+                  </button>
+              </div>
+  
+              <div class="comments-section" style="display: none;">
+                  <div class="comments-list-box">${commentsHtml}</div>
+                  <div class="comment-input-row">
+                      <input type="text" placeholder="寫下你的溫暖回應..." class="input-new-comment">
+                      <button class="btn-send-comment"><i class="fa-solid fa-paper-plane"></i></button>
+                  </div>
+              </div>
+          `;
 
     // 點讚動作
     card.querySelector('.btn-like').addEventListener('click', () => {
@@ -518,23 +509,23 @@ function renderHotTags() {
 // 推薦追蹤博主列表 (純前端靜態模擬切換)
 function renderRecommendations() {
   elements.recommendationsList.innerHTML = `
-        <div class="follow-item">
-            <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100" class="user-avatar-sm">
-            <div class="follow-info">
-                <h5>UIUX 靈感庫</h5>
-                <span>@uiux_daily</span>
-            </div>
-            <button class="btn-follow-mock">追蹤</button>
-        </div>
-        <div class="follow-item">
-            <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100" class="user-avatar-sm">
-            <div class="follow-info">
-                <h5>美感攝影集</h5>
-                <span>@photo_poem</span>
-            </div>
-            <button class="btn-follow-mock">追蹤</button>
-        </div>
-    `;
+          <div class="follow-item">
+              <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100" class="user-avatar-sm">
+              <div class="follow-info">
+                  <h5>UIUX 靈感庫</h5>
+                  <span>@uiux_daily</span>
+              </div>
+              <button class="btn-follow-mock">追蹤</button>
+          </div>
+          <div class="follow-item">
+              <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100" class="user-avatar-sm">
+              <div class="follow-info">
+                  <h5>美感攝影集</h5>
+                  <span>@photo_poem</span>
+              </div>
+              <button class="btn-follow-mock">追蹤</button>
+          </div>
+      `;
   elements.recommendationsList.querySelectorAll('.btn-follow-mock').forEach(btn => {
     btn.addEventListener('click', () => {
       const isFollowing = btn.classList.contains('following');
@@ -675,4 +666,43 @@ function showToast(message) {
     toast.style.animation = "slideOut 0.3s ease forwards";
     setTimeout(() => toast.remove(), 300);
   }, 2800);
+}
+
+// ====== 本地圖片上傳功能 ======
+const imageBtn = document.getElementById('btn-trigger-image-popup');
+const fileInput = document.getElementById('file-upload-input');
+const previewBox = document.getElementById('image-preview-box');
+const previewImg = document.getElementById('image-preview-img');
+
+// 1. 當點擊圖片圖示時，模擬點擊隱藏的檔案上傳欄位
+if (imageBtn && fileInput) {
+  imageBtn.addEventListener('click', (e) => {
+    e.preventDefault(); // 阻止原本跳出 URL 視窗的預設行為
+    e.stopPropagation();
+    fileInput.click();
+  });
+}
+
+// 2. 當使用者選擇好照片後，讀取照片並顯示在預覽視窗
+if (fileInput) {
+  fileInput.addEventListener('change', function () {
+    const file = this.files[0];
+
+    if (file) {
+      const reader = new FileReader();
+
+      reader.addEventListener('load', function () {
+        // 將讀取到的圖片 Base64 編碼塞入原本的預覽圖片標籤
+        if (previewImg && previewBox) {
+          previewImg.src = this.result;
+          previewBox.style.display = 'block'; // 顯示預覽區塊
+
+          // 如果你的專案有給預覽區塊加上 active 或是 show 的 class，也可以在這裡加上
+          previewBox.classList.add('active');
+        }
+      });
+
+      reader.readAsDataURL(file); // 開始讀取檔案
+    }
+  });
 }
