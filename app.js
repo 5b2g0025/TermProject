@@ -9,6 +9,16 @@ const DEFAULT_USER = {
   avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"
 };
 
+let currentUser = DEFAULT_USER;
+
+const PRESET_AVATARS = [
+  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
+  "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80"
+];
+let selectedRegisterAvatar = PRESET_AVATARS[0];
+
 // 初始預設的動態牆貼文資料
 let posts = [
   {
@@ -111,7 +121,30 @@ const elements = {
   // 外觀模式與提示
   btnThemeToggle: document.getElementById('btn-theme-toggle'),
   themeIcon: document.getElementById('theme-icon'),
-  toastContainer: document.getElementById('toast-container')
+  toastContainer: document.getElementById('toast-container'),
+
+  // 會員認證元件
+  authModal: document.getElementById('auth-modal'),
+  menuAuth: document.getElementById('menu-auth'),
+  menuAuthText: document.getElementById('menu-auth-text'),
+  btnCloseAuth: document.getElementById('btn-close-auth'),
+  tabLoginBtn: document.getElementById('tab-login-btn'),
+  tabRegisterBtn: document.getElementById('tab-register-btn'),
+  loginForm: document.getElementById('login-form'),
+  registerForm: document.getElementById('register-form'),
+  loginEmail: document.getElementById('login-email'),
+  loginPassword: document.getElementById('login-password'),
+  registerUsername: document.getElementById('register-username'),
+  registerHandle: document.getElementById('register-handle'),
+  registerEmail: document.getElementById('register-email'),
+  registerPassword: document.getElementById('register-password'),
+  regAvatarGrid: document.getElementById('reg-avatar-grid'),
+  btnLoginGoogle: document.getElementById('btn-login-google'),
+  btnLoginFacebook: document.getElementById('btn-login-facebook'),
+  profileAvatarImg: document.getElementById('profile-avatar-img'),
+  profileDisplayName: document.getElementById('profile-display-name'),
+  profileDisplayHandle: document.getElementById('profile-display-handle'),
+  postCreatorAvatar: document.getElementById('post-creator-avatar')
 };
 
 // ==========================================
@@ -122,7 +155,15 @@ document.addEventListener('DOMContentLoaded', () => {
   initEventListeners();
   initPresets();
   renderApp();
-  showToast("歡迎回來！AuraWall 已成功解鎖，免登入直接探索。");
+  updateAuthUI();
+
+  const loggedInUser = localStorage.getItem('aurawall_logged_in_user');
+  if (loggedInUser) {
+    const user = JSON.parse(loggedInUser);
+    showToast(`歡迎回來，${user.username}！AuraWall 已成功解鎖。`);
+  } else {
+    showToast("歡迎回來！AuraWall 已成功解鎖，免登入直接探索。");
+  }
 });
 
 // 外觀主題設定初始化
@@ -186,6 +227,38 @@ function initEventListeners() {
   elements.menuFeed.addEventListener('click', () => switchMenu('feed'));
   elements.menuBookmarks.addEventListener('click', () => switchMenu('bookmarks'));
   elements.menuAbout.addEventListener('click', () => switchMenu('about'));
+  if (elements.menuAuth) {
+    elements.menuAuth.addEventListener('click', handleAuthButtonClick);
+  }
+
+  // 會員登入 / 註冊相關監聽
+  if (elements.btnCloseAuth) {
+    elements.btnCloseAuth.addEventListener('click', () => {
+      elements.authModal.style.display = 'none';
+    });
+  }
+  if (elements.tabLoginBtn) {
+    elements.tabLoginBtn.addEventListener('click', () => switchAuthTab('login'));
+  }
+  if (elements.tabRegisterBtn) {
+    elements.tabRegisterBtn.addEventListener('click', () => switchAuthTab('register'));
+  }
+  if (elements.loginForm) {
+    elements.loginForm.addEventListener('submit', handleLogin);
+  }
+  if (elements.registerForm) {
+    elements.registerForm.addEventListener('submit', handleRegister);
+  }
+  if (elements.btnLoginGoogle) {
+    elements.btnLoginGoogle.addEventListener('click', () => {
+      window.open('google-login-mock.html', 'GoogleLogin', 'width=500,height=600,left=200,top=100');
+    });
+  }
+  if (elements.btnLoginFacebook) {
+    elements.btnLoginFacebook.addEventListener('click', () => {
+      window.open('facebook-login-mock.html', 'FacebookLogin', 'width=500,height=600,left=200,top=100');
+    });
+  }
 
   // 最新、熱門頁籤切換
   elements.tabLatest.addEventListener('click', () => {
@@ -459,7 +532,7 @@ function renderPosts() {
       if (commentText) {
         post.comments.push({
           id: 'comment-' + Date.now(),
-          authorName: DEFAULT_USER.username,
+          authorName: currentUser.username,
           content: commentText
         });
         commentInput.value = '';
@@ -562,9 +635,9 @@ function handlePublishPost() {
 
   const newPostObj = {
     id: 'post-' + Date.now(),
-    authorName: DEFAULT_USER.username,
-    authorHandle: DEFAULT_USER.handle,
-    authorAvatar: DEFAULT_USER.avatar,
+    authorName: currentUser.username,
+    authorHandle: currentUser.handle,
+    authorAvatar: currentUser.avatar,
     content: textContent,
     image: selectedPostImageUrl,
     timestamp: new Date().toISOString(),
@@ -621,7 +694,7 @@ function renderPostFormTags() {
 
 // 更新看版與左側個人統計面板數字
 function updateStatsCounter() {
-  const myPostsCount = posts.filter(p => p.authorHandle === DEFAULT_USER.handle).length;
+  const myPostsCount = posts.filter(p => p.authorHandle === currentUser.handle).length;
   const myBookmarksCount = posts.filter(p => p.isBookmarked).length;
   const totalLikes = posts.reduce((sum, p) => sum + p.likes, 0);
 
@@ -706,3 +779,210 @@ if (fileInput) {
     }
   });
 }
+
+// ==========================================
+// 8. AUTHENTICATION MODULE LOGIC (會員登入與註冊邏輯)
+// ==========================================
+
+// 更新認證狀態相關的 UI
+function updateAuthUI() {
+  const loggedInUser = localStorage.getItem('aurawall_logged_in_user');
+  if (loggedInUser) {
+    currentUser = JSON.parse(loggedInUser);
+    if (elements.menuAuthText) elements.menuAuthText.textContent = "登出帳戶";
+    if (elements.menuAuth) {
+      elements.menuAuth.querySelector('i').className = "fa-solid fa-right-from-bracket";
+    }
+  } else {
+    currentUser = DEFAULT_USER;
+    if (elements.menuAuthText) elements.menuAuthText.textContent = "會員登入 / 註冊";
+    if (elements.menuAuth) {
+      elements.menuAuth.querySelector('i').className = "fa-solid fa-right-to-bracket";
+    }
+  }
+
+  // 同步側邊個人檔案資訊
+  if (elements.profileAvatarImg) elements.profileAvatarImg.src = currentUser.avatar;
+  if (elements.profileDisplayName) {
+    elements.profileDisplayName.innerHTML = `
+      ${currentUser.username}
+      <i class="fa-solid fa-circle-check badge-official" title="已驗證用戶"></i>
+    `;
+  }
+  if (elements.profileDisplayHandle) elements.profileDisplayHandle.textContent = currentUser.handle;
+
+  // 同步發文框旁的大頭貼
+  if (elements.postCreatorAvatar) elements.postCreatorAvatar.src = currentUser.avatar;
+
+  // 重新渲染與刷新計數器
+  updateStatsCounter();
+}
+
+// 點擊側邊欄登入/登出按鈕
+function handleAuthButtonClick() {
+  const loggedInUser = localStorage.getItem('aurawall_logged_in_user');
+  if (loggedInUser) {
+    // 執行登出流程
+    localStorage.removeItem('aurawall_logged_in_user');
+    updateAuthUI();
+    showToast("👋 您已成功登出 AuraWall！已回復為訪客身分。");
+  } else {
+    // 顯示登入彈出視窗
+    if (elements.authModal) {
+      elements.authModal.style.display = 'flex';
+      switchAuthTab('login');
+    }
+  }
+}
+
+// 切換登入與註冊的分頁 (Tabs)
+function switchAuthTab(tab) {
+  if (tab === 'login') {
+    if (elements.tabLoginBtn) elements.tabLoginBtn.classList.add('active');
+    if (elements.tabRegisterBtn) elements.tabRegisterBtn.classList.remove('active');
+    if (elements.loginForm) elements.loginForm.style.display = 'flex';
+    if (elements.registerForm) elements.registerForm.style.display = 'none';
+  } else {
+    if (elements.tabRegisterBtn) elements.tabRegisterBtn.classList.add('active');
+    if (elements.tabLoginBtn) elements.tabLoginBtn.classList.remove('active');
+    if (elements.registerForm) elements.registerForm.style.display = 'flex';
+    if (elements.loginForm) elements.loginForm.style.display = 'none';
+    renderRegisterAvatars();
+  }
+}
+
+// 渲染註冊時的頭像挑選清單
+document.addEventListener('DOMContentLoaded', () => {
+  const fileInput = document.getElementById('avatar-upload');
+  const previewImg = document.getElementById('custom-avatar-preview');
+  const plusIcon = document.getElementById('upload-plus-icon');
+  const customRadio = document.getElementById('custom-avatar-radio');
+  const avatarOptions = document.querySelectorAll('.avatar-option');
+
+  // 1. 處理點擊頭像的外框選取特效
+  avatarOptions.forEach(option => {
+    option.addEventListener('click', () => {
+      avatarOptions.forEach(opt => opt.classList.remove('active'));
+      option.classList.add('active');
+    });
+  });
+
+  // 2. 【已修正】移除了原本的 uploadTrigger.addEventListener('click', ...)
+  // 靠 HTML 的 <label> 標籤自然觸發檔案視窗即可，不會再跳出第二次！
+
+  // 3. 當使用者選好圖片（或關閉視窗）後的處理
+  fileInput.addEventListener('change', function () {
+    const file = this.files[0];
+
+    if (file) {
+      const reader = new FileReader();
+
+      reader.onload = function (e) {
+        // 顯示預覽圖，隱藏原本的 📷 圖標
+        previewImg.src = e.target.result;
+        previewImg.style.display = 'block';
+        plusIcon.style.display = 'none';
+
+        // 自動勾選自訂頭像的 radio 
+        customRadio.checked = true;
+      }
+
+      reader.readAsDataURL(file);
+    }
+  });
+});
+
+// 處理 Email 登入提交
+function handleLogin(e) {
+  e.preventDefault();
+  const email = elements.loginEmail.value.trim();
+  const password = elements.loginPassword.value.trim();
+
+  // 1. 驗證內建測試帳號
+  if (email === 'admin@aurawall.com' && password === '123456') {
+    const adminUser = {
+      username: "管理員 Admin",
+      handle: "@aurawall_admin",
+      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+      email: email,
+      provider: 'local'
+    };
+    localStorage.setItem('aurawall_logged_in_user', JSON.stringify(adminUser));
+    updateAuthUI();
+    showToast("👋 歡迎回來，管理員！");
+    elements.loginForm.reset();
+    if (elements.authModal) elements.authModal.style.display = 'none';
+    return;
+  }
+
+  // 2. 驗證本地註冊之用戶陣列
+  const users = JSON.parse(localStorage.getItem('aurawall_users') || '[]');
+  const matchedUser = users.find(u => u.email === email && u.password === password);
+
+  if (matchedUser) {
+    localStorage.setItem('aurawall_logged_in_user', JSON.stringify(matchedUser));
+    updateAuthUI();
+    showToast(`👋 歡迎回來，${matchedUser.username}！`);
+    elements.loginForm.reset();
+    if (elements.authModal) elements.authModal.style.display = 'none';
+  } else {
+    showToast("❌ 帳號或密碼輸入錯誤，請再試一次");
+  }
+}
+
+// 處理 Email 註冊提交
+function handleRegister(e) {
+  e.preventDefault();
+  const username = elements.registerUsername.value.trim();
+  let handle = elements.registerHandle.value.trim();
+  if (!handle.startsWith('@')) {
+    handle = '@' + handle;
+  }
+  const email = elements.registerEmail.value.trim();
+  const password = elements.registerPassword.value.trim();
+
+  // 讀取現有用戶列表 
+  const users = JSON.parse(localStorage.getItem('aurawall_users') || '[]');
+
+  // 檢查 Email 是否已註冊
+  if (users.some(u => u.email === email)) {
+    showToast("⚠️ 該信箱已經被註冊過囉！請改用其他信箱。");
+    return;
+  }
+
+  const newUser = {
+    username: username,
+    handle: handle,
+    email: email,
+    password: password,
+    avatar: selectedRegisterAvatar,
+    provider: 'local'
+  };
+
+  users.push(newUser);
+  localStorage.setItem('aurawall_users', JSON.stringify(users));
+
+  // 註冊成功後自動登入
+  localStorage.setItem('aurawall_logged_in_user', JSON.stringify(newUser));
+  updateAuthUI();
+  showToast("🎉 註冊成功！已為您自動登入。");
+
+  // 重置表單並關閉彈出視窗
+  elements.registerForm.reset();
+  if (elements.authModal) elements.authModal.style.display = 'none';
+}
+
+// 處理第三方社群帳戶登入成功回呼 (Google, Facebook 等彈出視窗會呼叫此函式)
+window.handleSocialLogin = function (socialUser) {
+  localStorage.setItem('aurawall_logged_in_user', JSON.stringify(socialUser));
+  updateAuthUI();
+  showToast(`✨ 已成功使用 ${socialUser.provider === 'google' ? 'Google' : 'Facebook'} 帳戶登入！`);
+  if (elements.authModal) elements.authModal.style.display = 'none';
+};
+
+// 額外設定 window message 接收機制以支援備用通訊方案
+window.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'social_login') {
+    window.handleSocialLogin(event.data.user);
+  }
+});

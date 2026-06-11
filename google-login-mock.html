@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google 帳戶登入 - 選擇帳戶</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #ffffff;
+      color: #202124;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 450px;
+      padding: 40px;
+      border: 1px solid #dadce0;
+      border-radius: 8px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    .google-logo {
+      width: 75px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 400;
+      margin: 0 0 8px 0;
+      color: #202124;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: #5f6368;
+      margin-top: 0;
+      margin-bottom: 24px;
+    }
+
+    .account-list {
+      border-top: 1px solid #dadce0;
+      text-align: left;
+      margin-bottom: 24px;
+    }
+
+    .account-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #dadce0;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .account-item:hover {
+      background-color: #f8f9fa;
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      margin-right: 12px;
+      object-fit: cover;
+    }
+
+    .account-info {
+      flex: 1;
+    }
+
+    .name {
+      font-size: 14px;
+      font-weight: 500;
+      color: #3c4043;
+    }
+
+    .email {
+      font-size: 12px;
+      color: #5f6368;
+    }
+
+    .other-account {
+      display: flex;
+      align-items: center;
+      padding: 16px 0;
+      cursor: pointer;
+      color: #1a73e8;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .other-icon {
+      width: 32px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-right: 12px;
+      font-size: 18px;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #757575;
+      margin-top: 24px;
+    }
+
+    .footer a {
+      color: #757575;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      color: #333;
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+  <div class="container">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" alt="Google"
+      class="google-logo">
+    <h1>選擇帳戶</h1>
+    <p class="subtitle">以繼續前往 AuraWall</p>
+
+    <div class="account-list">
+      <!-- 使用其他帳戶 -->
+      <div class="other-account" onclick="customAccount()">
+        <div class="other-icon">
+          <i class="fa-regular fa-user-circle"></i>
+        </div>
+        <div>使用其他帳戶</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>中文 (繁體)</div>
+      <div style="display: flex; gap: 10px;">
+        <a href="#">說明</a>
+        <a href="#">隱私權</a>
+        <a href="#">條款</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function selectAccount(username, handle, avatar, email) {
+      const user = {
+        username: username,
+        handle: handle,
+        avatar: avatar,
+        email: email,
+        provider: 'google'
+      };
+      loginAndClose(user);
+    }
+
+    function customAccount() {
+      const email = prompt("請輸入您的 Google 電子信箱:");
+      if (!email) return;
+      const username = email.split('@')[0];
+      const user = {
+        username: username + " (Google)",
+        handle: "@" + username + "_google",
+        avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
+        email: email,
+        provider: 'google'
+      };
+      loginAndClose(user);
+    }
+
+    function loginAndClose(user) {
+      // 嘗試呼叫主視窗的 Callback
+      try {
+        if (window.opener && !window.opener.closed) {
+          if (typeof window.opener.handleSocialLogin === 'function') {
+            window.opener.handleSocialLogin(user);
+          } else {
+            window.opener.postMessage({ type: 'social_login', user: user }, '*');
+          }
+        }
+      } catch (e) {
+        console.error("無法直接回傳資料，嘗試使用 postMessage", e);
+        if (window.opener) {
+          window.opener.postMessage({ type: 'social_login', user: user }, '*');
+        }
+      }
+      window.close();
+    }
+  </script>
+</body>
+
+</html>

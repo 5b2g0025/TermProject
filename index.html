@@ -63,6 +63,10 @@
           <i class="fa-solid fa-circle-info"></i>
           <span>關於本站</span>
         </button>
+        <button class="menu-item" id="menu-auth">
+          <i class="fa-solid fa-right-to-bracket"></i>
+          <span id="menu-auth-text">會員登入 / 註冊</span>
+        </button>
       </nav>
 
       <div class="footer-widget glass-panel">
@@ -191,6 +195,123 @@
 
     </aside>
 
+  </div>
+
+  <!-- 會員登入 / 註冊彈出視窗 -->
+  <div class="auth-container" id="auth-modal" style="display: none;">
+    <div class="auth-card glass-panel">
+      <!-- 關閉按鈕 -->
+      <button class="btn-close-modal" id="btn-close-auth"
+        style="position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--text-muted); background: var(--input-bg); transition: all var(--transition-fast);">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="auth-header">
+        <div class="logo-circle">A</div>
+        <span class="brand-name">AuraWall</span>
+      </div>
+      <p class="auth-subtitle">探索極致美感與精彩貼文牆</p>
+
+      <!-- 頁籤切換 -->
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" id="tab-login-btn">會員登入</button>
+        <button class="auth-tab-btn" id="tab-register-btn">新用戶註冊</button>
+      </div>
+
+      <!-- 登入表單 -->
+      <form class="auth-form" id="login-form">
+        <div class="input-with-icon">
+          <i class="fa-regular fa-envelope"></i>
+          <input type="email" placeholder="電子信箱 Email" id="login-email" required>
+        </div>
+        <div class="input-with-icon">
+          <i class="fa-solid fa-lock"></i>
+          <input type="password" placeholder="密碼 Password" id="login-password" required>
+        </div>
+        <button type="submit" class="btn-auth-submit">
+          <i class="fa-solid fa-right-to-bracket"></i>
+          <span>登入系統</span>
+        </button>
+      </form>
+
+      <!-- 註冊表單 -->
+      <form class="auth-form" id="register-form" style="display: none;">
+        <div class="input-with-icon">
+          <i class="fa-regular fa-user"></i>
+          <input type="text" placeholder="顯示名稱 Username" id="register-username" required>
+        </div>
+        <div class="input-with-icon">
+          <i class="fa-solid fa-at"></i>
+          <input type="text" placeholder="用戶帳號 Handle (例如: @explorer)" id="register-handle" required>
+        </div>
+        <div class="input-with-icon">
+          <i class="fa-regular fa-envelope"></i>
+          <input type="email" placeholder="電子信箱 Email" id="register-email" required>
+        </div>
+        <div class="input-with-icon">
+          <i class="fa-solid fa-lock"></i>
+          <input type="password" placeholder="設定密碼 Password" id="register-password" required>
+        </div>
+        <div class="form-group" style="width: 100%; margin-top: 4px; display: flex; flex-direction: column; gap: 6px;">
+          <label style="font-size: 13px; color: var(--text-muted); font-weight: 600; text-align: left;">選擇你的頭像</label>
+          <div class="reg-avatar-picker-grid" id="reg-avatar-grid">
+            <!-- 動態填入預設頭像選項 -->
+          </div>
+        </div>
+
+        <input type="file" id="avatar-upload" accept="image/*" style="display: none;">
+
+        <div class="avatar-selection-container">
+          <label class="avatar-option active">
+            <input type="radio" name="avatar" value="dog" checked>
+            <img src="https://cdn2.ettoday.net/images/1161/d1161122.jpg" alt="狗">
+          </label>
+
+          <label class="avatar-option">
+            <input type="radio" name="avatar" value="cat">
+            <img src="https://gd-hbimg.huaban.com/dc4b46d78ad5d8f1657dc3b3dd28d7bec4a9b6c418bc9-TFXE1F_fw658" alt="貓">
+          </label>
+
+          <label class="avatar-option">
+            <input type="radio" name="avatar" value="rabbit">
+            <img src="https://img.touxiangkong.com/uploads/allimg/2021082922/ac4myvzq54k.jpg" alt="兔子">
+          </label>
+
+          <label class="avatar-option custom-upload" id="upload-trigger" for="avatar-upload">
+            <input type="radio" name="avatar" value="custom" id="custom-avatar-radio">
+            <div class="upload-icon-box">
+              <img src="" id="custom-avatar-preview" style="display: none;">
+              <span id="upload-plus-icon"><img
+                  src="https://wallpapers.com/images/thumbnail/camera-icon-simple-black-9rz2qb53wzbafmil.webp"
+                  alt="相機"></span>
+            </div>
+          </label>
+        </div>
+
+        <button type="submit" class="btn-auth-submit">
+          <i class="fa-solid fa-user-plus"></i>
+          <span>註冊新帳戶</span>
+        </button>
+      </form>
+
+      <!-- 分隔線與第三方登入 -->
+      <div class="social-login-section" style="width: 100%; margin-top: 24px; text-align: center;">
+        <div
+          style="display: flex; align-items: center; margin-bottom: 16px; color: var(--text-muted); font-size: 12px;">
+          <div style="flex: 1; height: 1px; background: var(--glass-border);"></div>
+          <span style="padding: 0 10px;">或使用社群帳號登入</span>
+          <div style="flex: 1; height: 1px; background: var(--glass-border);"></div>
+        </div>
+        <div class="social-buttons-container" style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- Google Login -->
+          <button class="btn-social-google" id="btn-login-google" type="button">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google logo"
+              style="width: 18px; height: 18px;">
+            <span>使用 Google 帳號登入</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="toast-container" id="toast-container"></div>
