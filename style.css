@@ -12,6 +12,8 @@
   --grad-accent: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
   --grad-sunset: linear-gradient(135deg, #ff007a 0%, #ff7e40 100%);
   --grad-emerald: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  /* 側邊上方色帶（可由使用者修改） */
+  --sidebar-accent: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
 
   /* Constant Colors */
   --color-like: #ef4444;
@@ -215,9 +217,23 @@ textarea {
   left: 0;
   right: 0;
   height: 60px;
-  background: var(--grad-primary);
+  background: var(--sidebar-accent);
   opacity: 0.15;
   z-index: 0;
+}
+
+/* 色塊選擇器 */
+.color-swatch {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 2px solid rgba(255,255,255,0.06);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+.color-swatch.selected {
+  outline: 3px solid rgba(255,255,255,0.12);
+  transform: translateY(-2px);
 }
 
 .avatar-wrapper {
@@ -733,13 +749,13 @@ textarea {
   position: absolute;
   bottom: 70px;
   left: 20px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  background: #ffffff;
+  color: var(--text-main);
+  border: 1px solid rgba(0,0,0,0.08);
   border-radius: var(--border-radius-md);
   padding: 12px;
   z-index: 10;
   box-shadow: var(--shadow-lg);
-  backdrop-filter: var(--glass-blur);
   width: 250px;
 }
 
@@ -764,7 +780,7 @@ textarea {
 }
 
 .emoji-item:hover {
-  background: var(--highlight-color);
+  background: #f2f2f2;
 }
 
 /* Footer / Actions toolbar in Create Post */
@@ -1135,6 +1151,13 @@ textarea {
   gap: 20px;
 }
 
+/* 右側 widgets 可滾動，避免看不到下方內容 */
+.widgets {
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
 .widget-card {
   padding: 20px;
 }
@@ -1220,29 +1243,56 @@ textarea {
 
 .follow-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.follow-user {
-  display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.follow-user-meta {
+.follow-item .user-avatar-sm {
+  flex-shrink: 0;
+}
+
+.follow-info {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
 }
 
-.follow-name {
+.follow-info h5 {
   font-size: 13px;
   font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.follow-handle {
+.follow-info > span {
   font-size: 11px;
   color: var(--text-muted);
+}
+
+.btn-follow-mock {
+  background: var(--tag-bg);
+  color: var(--tag-text);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 20px;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-follow-mock:hover {
+  background: var(--grad-primary);
+  color: white;
+}
+
+.btn-follow-mock.following {
+  background: var(--input-bg);
+  color: var(--text-muted);
+  outline: 1px solid var(--glass-border);
 }
 
 .btn-follow {
@@ -1283,6 +1333,24 @@ textarea {
   justify-content: center;
   padding: 20px;
   animation: fadeIn var(--transition-fast);
+}
+
+/* 顯示/關閉動畫狀態 */
+.modal-overlay.open {
+  display: flex;
+}
+.modal-overlay .modal-content {
+  transform: translateY(8px);
+  opacity: 0;
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+.modal-overlay.open .modal-content {
+  transform: translateY(0);
+  opacity: 1;
+}
+.modal-overlay.closing .modal-content {
+  transform: translateY(8px);
+  opacity: 0;
 }
 
 .modal-content {
@@ -1822,55 +1890,131 @@ textarea {
   /* 防止文字因為透明度設定過低而看不清 */
 }
 
-/* ====== 表情符號彈出視窗基礎與顯示樣式 ====== */
-
-/* 1. 當 JS 幫視窗加上 active 類別時，強制顯示出來 */
-#emoji-picker-popup.active,
-.emoji-picker-popup.active {
-  display: block !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-}
-
-/* 2. 優化表情符號彈出視窗的排版與位置 */
-#emoji-picker-popup {
+/* ====== 表情符號彈出視窗（含分類）====== */
+#emoji-picker-popup,
+.emoji-picker-popup {
+  display: none;
   position: absolute;
   bottom: 60px;
-  /* 讓它浮在發文工具列的上方 */
   left: 20px;
-  background: rgba(30, 30, 40, 0.95);
-  /* 深色磨砂玻璃背景 */
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 12px;
-  width: 280px;
-  max-height: 200px;
-  overflow-y: auto;
-  /* 超過高度時允許滾動觀看 */
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-md);
+  padding: 0;
+  width: 300px;
+  box-shadow: var(--shadow-lg);
   z-index: 999;
-  /* 確保不會被其他貼文擋住 */
+  overflow: hidden;
+  animation: fadeIn 0.15s ease;
 }
 
-/* 3. 表情符號網格排版 (讓表情符號排整齊) */
-#emoji-grid {
+.emoji-picker-header {
+  padding: 10px 12px 6px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.emoji-picker-title {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.emoji-category-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.emoji-cat-tab {
+  font-size: 18px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+  background: transparent;
+  border: none;
+}
+
+.emoji-cat-tab:hover {
+  background: var(--highlight-color);
+  transform: scale(1.1);
+}
+
+.emoji-cat-tab.active {
+  background: var(--tag-bg);
+  outline: 1px solid var(--tag-text);
+}
+
+#emoji-grid,
+.emoji-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  /* 一行排 7 個表情 */
-  gap: 6px;
-  text-align: center;
+  gap: 4px;
+  padding: 10px 12px 12px;
+  max-height: 200px;
+  overflow-y: auto;
 }
 
-/* 4. 滑鼠游標移過去表情時的放大與漸變效果 */
 .emoji-item {
-  transition: transform 0.2s, background 0.2s;
-  border-radius: 6px;
+  font-size: 22px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.15s, background 0.15s;
+  line-height: 1;
 }
 
 .emoji-item:hover {
-  transform: scale(1.2);
-  background: rgba(255, 255, 255, 0.15);
+  transform: scale(1.25);
+  background: var(--highlight-color);
+}
+
+/* 貼文圖片限制高度，避免撐破卡片版面 */
+.post-media-box {
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  max-height: 340px;
+  background: var(--input-bg);
+}
+
+.post-media-box img {
+  width: 100%;
+  max-height: 340px;
+  object-fit: cover;
+  display: block;
+}
+
+/* 推薦追蹤 bio 和 follower count */
+.follow-bio {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
+}
+
+.follow-count {
+  display: block;
+  font-size: 11px;
+  color: var(--tag-text);
+  margin-top: 2px;
+  font-weight: 500;
 }
 
 /* ====== 社交登入按鈕樣式 ====== */
