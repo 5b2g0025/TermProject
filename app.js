@@ -560,6 +560,10 @@ const elements = {
   btnCloseAuthorModal: document.getElementById('btn-close-author-modal'),
   authorModalBody: document.getElementById('author-modal-body'),
   authorModalTitle: document.getElementById('author-modal-title'),
+  statsFollowingCard: document.getElementById('stats-following-card'),
+  followingModal: document.getElementById('following-modal'),
+  btnCloseFollowingModal: document.getElementById('btn-close-following-modal'),
+  followingModalBody: document.getElementById('following-modal-body'),
   loginRequiredModal: document.getElementById('login-required-modal'),
   
   btnCloseLoginRequired: document.getElementById('btn-close-login-required'),
@@ -575,6 +579,8 @@ const elements = {
   registerHandle: document.getElementById('register-handle'),
   registerEmail: document.getElementById('register-email'),
   registerPassword: document.getElementById('register-password'),
+  registerHandleError: document.getElementById('register-handle-error'),
+  registerEmailError: document.getElementById('register-email-error'),
   regAvatarGrid: document.getElementById('reg-avatar-grid'),
   btnLoginGoogle: document.getElementById('btn-login-google'),
   btnLoginFacebook: document.getElementById('btn-login-facebook'),
@@ -611,6 +617,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initEventListeners();
   initPresets();
+  loadSavedPosts();
   ensureManyPosts();
   renderApp();
   updateAuthUI();
@@ -657,6 +664,23 @@ function ensureManyPosts() {
     i++;
     if (i > 200) break;
   }
+}
+
+function loadSavedPosts() {
+  const saved = localStorage.getItem('aurawall_posts');
+  if (!saved) return;
+  try {
+    const parsed = JSON.parse(saved);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      posts = parsed;
+    }
+  } catch (e) {
+    console.warn('載入本地貼文資料失敗', e);
+  }
+}
+
+function persistPosts() {
+  localStorage.setItem('aurawall_posts', JSON.stringify(posts));
 }
 
 // 預載表情符號（含分類）
@@ -738,6 +762,19 @@ function initEventListeners() {
   elements.menuAbout.addEventListener('click', () => switchMenu('about'));
   if (elements.menuAuth) {
     elements.menuAuth.addEventListener('click', handleAuthButtonClick);
+  }
+  if (elements.statsFollowingCard) {
+    elements.statsFollowingCard.addEventListener('click', openFollowingModal);
+  }
+  if (elements.registerHandle) {
+    elements.registerHandle.addEventListener('input', () => {
+      if (elements.registerHandleError) elements.registerHandleError.textContent = '';
+    });
+  }
+  if (elements.registerEmail) {
+    elements.registerEmail.addEventListener('input', () => {
+      if (elements.registerEmailError) elements.registerEmailError.textContent = '';
+    });
   }
 
   // 會員登入 / 註冊相關監聽
@@ -870,6 +907,7 @@ function initEventListeners() {
   });
 
   if (elements.btnCloseAuthorModal) elements.btnCloseAuthorModal.addEventListener('click', () => { closeModal(elements.authorModal); });
+  if (elements.btnCloseFollowingModal) elements.btnCloseFollowingModal.addEventListener('click', () => { closeModal(elements.followingModal); });
 
   // 登入提示 modal 相關綁定
   if (elements.btnCloseLoginRequired) elements.btnCloseLoginRequired.addEventListener('click', closeLoginRequiredModal);
@@ -963,6 +1001,17 @@ function renderPosts() {
 
   // 1. 收藏過濾
   if (currentMenuTab === 'bookmarks') {
+    if (!isLoggedIn()) {
+      elements.activeFilterBadge.style.display = 'none';
+      elements.postsFeed.innerHTML = `
+          <div class="glass-panel" style="padding: 40px 24px; text-align: center; color: var(--text-muted);">
+            <i class="fa-solid fa-circle-exclamation" style="font-size: 28px; margin-bottom: 12px; display:block; color: var(--tag-text);"></i>
+            <h3 style="margin-bottom: 10px; color: var(--text-main);">請先登入</h3>
+            <p style="margin: 0;">登入後即可查看「我的收藏」內容。</p>
+          </div>
+        `;
+      return;
+    }
     filtered = filtered.filter(p => p.isBookmarked);
   }
 
@@ -1065,31 +1114,36 @@ function renderPosts() {
           `;
 
     // 點讚動作
-    card.querySelector('.btn-like').addEventListener('click', () => {
+    const likeButton = card.querySelector('.btn-like');
+    const bookmarkButton = card.querySelector('.btn-bookmark');
+    const commentTrigger = card.querySelector('.btn-comment-trigger');
+    const commentSection = card.querySelector('.comments-section');
+    const commentInput = card.querySelector('.input-new-comment');
+    const commentSendButton = card.querySelector('.btn-send-comment');
+    const isUserLoggedIn = isLoggedIn();
+
+    likeButton.addEventListener('click', () => {
+      if (!requireLogin()) return;
       post.isLiked = !post.isLiked;
       post.likes += post.isLiked ? 1 : -1;
+      persistPosts();
       renderPosts();
       updateStatsCounter();
     });
 
     // 珍藏動作
-    card.querySelector('.btn-bookmark').addEventListener('click', () => {
+    bookmarkButton.addEventListener('click', () => {
+      if (!requireLogin()) return;
       post.isBookmarked = !post.isBookmarked;
       showToast(post.isBookmarked ? "貼文已成功加入收藏清單" : "已從收藏清單中移除");
+      persistPosts();
       renderPosts();
       updateStatsCounter();
     });
 
-    // 展開/關閉留言面板
-    const commentSection = card.querySelector('.comments-section');
-    card.querySelector('.btn-comment-trigger').addEventListener('click', () => {
-      const isHidden = commentSection.style.display === 'none';
-      commentSection.style.display = isHidden ? 'block' : 'none';
-    });
-
     // 發表新留言回覆邏輯
-    const commentInput = card.querySelector('.input-new-comment');
     const submitComment = () => {
+      if (!requireLogin()) return;
       const commentText = commentInput.value.trim();
       if (commentText) {
         post.comments.push({
@@ -1097,12 +1151,29 @@ function renderPosts() {
           authorName: currentUser.username,
           content: commentText
         });
+        persistPosts();
         commentInput.value = '';
         renderPosts();
       }
     };
-    card.querySelector('.btn-send-comment').addEventListener('click', submitComment);
-    commentInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitComment(); });
+
+    // 留言區可互動狀態
+    if (!isUserLoggedIn) {
+      likeButton.classList.add('locked');
+      bookmarkButton.classList.add('locked');
+      commentTrigger.classList.add('locked');
+      commentInput.disabled = true;
+      commentInput.placeholder = '請先登入後留言';
+      commentSendButton.disabled = true;
+      commentTrigger.addEventListener('click', () => showLoginRequiredModal());
+    } else {
+      commentTrigger.addEventListener('click', () => {
+        const isHidden = commentSection.style.display === 'none';
+        commentSection.style.display = isHidden ? 'block' : 'none';
+      });
+      commentSendButton.addEventListener('click', submitComment);
+      commentInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitComment(); });
+    }
 
     // 點擊貼文內文字標籤，自動切換篩選
     card.querySelectorAll('.post-tag, .clickable-tag').forEach(tagElement => {
@@ -1152,7 +1223,20 @@ function renderHotTags() {
 
 // 推薦追蹤博主列表（使用真實資料渲染）
 function renderRecommendations() {
+  if (!elements.recommendationsList) return;
   elements.recommendationsList.innerHTML = '';
+  const followingList = Array.isArray(currentUser.following) ? currentUser.following : [];
+  const followedUsers = RECOMMENDED_USERS.filter(user => followingList.includes(user.handle));
+
+  if (isLoggedIn()) {
+    const summary = document.createElement('div');
+    summary.className = 'follow-summary';
+    summary.innerHTML = followedUsers.length > 0 ?
+      `<strong>你正在追蹤：${followedUsers.map(u => u.handle).join('、')}</strong>` :
+      `<span>你尚未追蹤任何人，點擊右側按鈕開始追蹤。</span>`;
+    elements.recommendationsList.appendChild(summary);
+  }
+
   RECOMMENDED_USERS.forEach(user => {
     const item = document.createElement('div');
     item.className = 'follow-item';
@@ -1166,13 +1250,16 @@ function renderRecommendations() {
       </div>
       <button class="btn-follow-mock">追蹤</button>
     `;
+
     const btn = item.querySelector('.btn-follow-mock');
+    const following = isFollowing(user.handle);
+    btn.className = following ? 'btn-follow-mock following' : 'btn-follow-mock';
+    btn.textContent = following ? '已追蹤' : '追蹤';
     btn.addEventListener('click', () => {
-      const isFollowing = btn.classList.contains('following');
-      btn.className = isFollowing ? 'btn-follow-mock' : 'btn-follow-mock following';
-      btn.textContent = isFollowing ? '追蹤' : '已追蹤';
-      showToast(isFollowing ? `已取消追蹤 ${user.name}` : `✅ 已追蹤 ${user.name}！`);
+      if (!requireLogin()) return;
+      toggleFollowing(user.handle, user.name);
     });
+
     elements.recommendationsList.appendChild(item);
   });
 }
@@ -1183,6 +1270,7 @@ function renderRecommendations() {
 
 // 處理發佈質感新貼文
 function handlePublishPost() {
+  if (!requireLogin()) return;
   const textContent = elements.postInputText.value.trim();
   if (!textContent && !selectedPostImageUrl) {
     showToast("說點心事想法，或加張圖片再發佈吧！");
@@ -1219,6 +1307,7 @@ function handlePublishPost() {
 
   // 插到陣列最前面
   posts.unshift(newPostObj);
+  persistPosts();
 
   // 清空輸入框與欄位狀態
   elements.postInputText.value = '';
@@ -1263,13 +1352,20 @@ function renderPostFormTags() {
 
 // 更新看版與左側個人統計面板數字
 function updateStatsCounter() {
-  const myPostsCount = posts.filter(p => p.authorHandle === currentUser.handle).length;
-  const myBookmarksCount = posts.filter(p => p.isBookmarked).length;
   const totalLikes = posts.reduce((sum, p) => sum + p.likes, 0);
 
-  if (elements.profilePostsCount) elements.profilePostsCount.textContent = myPostsCount;
-  if (elements.profileLikesCount) elements.profileLikesCount.textContent = totalLikes;
-  if (elements.profileBookmarksCount) elements.profileBookmarksCount.textContent = myBookmarksCount;
+  if (!isLoggedIn()) {
+    if (elements.profilePostsCount) elements.profilePostsCount.textContent = '0';
+    if (elements.profileLikesCount) elements.profileLikesCount.textContent = '0';
+    if (elements.profileBookmarksCount) elements.profileBookmarksCount.textContent = '0';
+  } else {
+    const myPostsCount = posts.filter(p => p.authorHandle === currentUser.handle).length;
+    const followCount = Array.isArray(currentUser.following) ? currentUser.following.length : 0;
+
+    if (elements.profilePostsCount) elements.profilePostsCount.textContent = myPostsCount;
+    if (elements.profileLikesCount) elements.profileLikesCount.textContent = totalLikes;
+    if (elements.profileBookmarksCount) elements.profileBookmarksCount.textContent = followCount;
+  }
 
   if (elements.totalPlatformPosts) elements.totalPlatformPosts.textContent = posts.length;
   if (elements.totalPlatformLikes) elements.totalPlatformLikes.textContent = totalLikes;
@@ -1370,12 +1466,14 @@ function updateAuthUI() {
   const loggedInUser = localStorage.getItem('aurawall_logged_in_user');
   if (loggedInUser) {
     currentUser = JSON.parse(loggedInUser);
+    if (!Array.isArray(currentUser.following)) currentUser.following = [];
     if (elements.menuAuthText) elements.menuAuthText.textContent = "登出帳戶";
     if (elements.menuAuth) {
       elements.menuAuth.querySelector('i').className = "fa-solid fa-right-from-bracket";
     }
   } else {
     currentUser = DEFAULT_USER;
+    currentUser.following = [];
     if (elements.menuAuthText) elements.menuAuthText.textContent = "會員登入 / 註冊";
     if (elements.menuAuth) {
       elements.menuAuth.querySelector('i').className = "fa-solid fa-right-to-bracket";
@@ -1386,18 +1484,25 @@ function updateAuthUI() {
   if (elements.profileAvatarImg) elements.profileAvatarImg.src = currentUser.avatar;
   if (elements.profileEditAvatarPreview) elements.profileEditAvatarPreview.src = currentUser.avatar;
   if (elements.profileDisplayName) {
-    elements.profileDisplayName.innerHTML = `
-      ${currentUser.username}
-      <i class="fa-solid fa-circle-check badge-official" title="已驗證用戶"></i>
-    `;
+    if (loggedInUser) {
+      elements.profileDisplayName.innerHTML = `
+        ${currentUser.username}
+        <i class="fa-solid fa-circle-check badge-official" title="已驗證用戶"></i>
+      `;
+    } else {
+      elements.profileDisplayName.textContent = '請先登入或註冊';
+    }
   }
-  if (elements.profileDisplayHandle) elements.profileDisplayHandle.textContent = currentUser.handle;
+  if (elements.profileDisplayHandle) {
+    elements.profileDisplayHandle.textContent = loggedInUser ? currentUser.handle : '';
+  }
 
   // 同步發文框旁的大頭貼
   if (elements.postCreatorAvatar) elements.postCreatorAvatar.src = currentUser.avatar;
 
   // 重新渲染與刷新計數器
   updateStatsCounter();
+  updatePostFormState();
 }
 
 // -----------------------------
@@ -1407,8 +1512,7 @@ const PROFILE_COLOR_OPTIONS = ['#6366f1','#06b6d4','#ff7e40','#f97316','#10b981'
 
 function openProfileEditModal() {
   // 若未登入，先顯示請登入提示
-  const logged = localStorage.getItem('aurawall_logged_in_user');
-  if (!logged) {
+  if (!isLoggedIn()) {
     showLoginRequiredModal();
     return;
   }
@@ -1429,6 +1533,120 @@ function showLoginRequiredModal() {
 function closeLoginRequiredModal() {
   if (!elements.loginRequiredModal) return;
   closeModal(elements.loginRequiredModal);
+}
+
+function isLoggedIn() {
+  return !!localStorage.getItem('aurawall_logged_in_user');
+}
+
+function requireLogin() {
+  if (!isLoggedIn()) {
+    showLoginRequiredModal();
+    return false;
+  }
+  return true;
+}
+
+function persistCurrentUser() {
+  if (!isLoggedIn()) return;
+  localStorage.setItem('aurawall_logged_in_user', JSON.stringify(currentUser));
+  const users = JSON.parse(localStorage.getItem('aurawall_users') || '[]');
+  const idx = users.findIndex(u => u.email && u.email === currentUser.email);
+  if (idx !== -1) {
+    users[idx] = currentUser;
+    localStorage.setItem('aurawall_users', JSON.stringify(users));
+  }
+}
+
+function isFollowing(handle) {
+  return Array.isArray(currentUser.following) && currentUser.following.includes(handle);
+}
+
+function toggleFollowing(handle, name) {
+  if (!requireLogin()) return;
+  if (!currentUser.following) currentUser.following = [];
+  const index = currentUser.following.indexOf(handle);
+  if (index >= 0) {
+    currentUser.following.splice(index, 1);
+    showToast(`已取消追蹤 ${name}`);
+  } else {
+    currentUser.following.push(handle);
+    showToast(`已追蹤 ${name}`);
+  }
+  persistCurrentUser();
+  updateStatsCounter();
+  renderRecommendations();
+  if (elements.followingModal && elements.followingModal.classList.contains('open')) {
+    renderFollowingModal();
+  }
+}
+
+function openFollowingModal() {
+  if (!elements.followingModal) return;
+  if (!requireLogin()) return;
+  renderFollowingModal();
+  openModal(elements.followingModal, elements.statsFollowingCard);
+}
+
+function renderFollowingModal() {
+  if (!elements.followingModalBody) return;
+  elements.followingModalBody.innerHTML = '';
+
+  const followingList = Array.isArray(currentUser.following) ? currentUser.following : [];
+  if (followingList.length === 0) {
+    elements.followingModalBody.innerHTML = `
+      <div class="glass-panel" style="padding: 30px 20px; text-align:center; color: var(--text-muted);">
+        <i class="fa-regular fa-star" style="font-size: 28px; margin-bottom: 10px; color: var(--tag-text);"></i>
+        <div>你目前尚未追蹤任何創作者。</div>
+        <div style="margin-top:10px; font-size:13px;">前往右側推薦追蹤或點擊作者頭像開始追蹤。</div>
+      </div>
+    `;
+    return;
+  }
+
+  const listEl = document.createElement('div');
+  listEl.className = 'following-list';
+
+  followingList.forEach(handle => {
+    const user = RECOMMENDED_USERS.find(u => u.handle === handle) || {
+      name: handle.replace('@', ''),
+      handle,
+      avatar: getFallbackAvatar(handle),
+      bio: '已追蹤的創作者'
+    };
+
+    const item = document.createElement('div');
+    item.className = 'following-list-item';
+    item.innerHTML = `
+      <img src="${user.avatar}" alt="${user.name}" class="user-avatar-sm">
+      <div class="follow-info">
+        <h5>${user.name}</h5>
+        <span>${user.handle}</span>
+        <small class="follow-bio">${user.bio}</small>
+      </div>
+      <button class="btn-follow-mock following" type="button">取消追蹤</button>
+    `;
+
+    const cancelBtn = item.querySelector('.btn-follow-mock');
+    cancelBtn.addEventListener('click', () => {
+      toggleFollowing(handle, user.name);
+    });
+
+    listEl.appendChild(item);
+  });
+
+  elements.followingModalBody.appendChild(listEl);
+}
+
+function updatePostFormState() {
+  const disabled = !isLoggedIn();
+  if (elements.postInputText) {
+    elements.postInputText.disabled = disabled;
+    elements.postInputText.placeholder = disabled ? '請先登入後發佈動態' : '分享今天的新新鮮事與美好靈感...';
+  }
+  if (elements.btnPublishPost) elements.btnPublishPost.disabled = disabled;
+  if (elements.btnTriggerImagePopup) elements.btnTriggerImagePopup.disabled = disabled;
+  if (elements.btnTriggerEmojiPopup) elements.btnTriggerEmojiPopup.disabled = disabled;
 }
 
 function closeProfileEditModal() {
@@ -1477,24 +1695,48 @@ function openAuthorModal(handle, triggerEl) {
   const title = authorPosts.length > 0 ? `${authorPosts[0].authorName} 的貼文` : `作者 ${handle} 的貼文`;
   elements.authorModalTitle.textContent = title;
   elements.authorModalBody.innerHTML = '';
+  const followBtn = document.createElement('button');
+  followBtn.className = `btn-follow ${isFollowing(handle) ? 'following' : ''}`;
+  followBtn.textContent = handle === currentUser.handle ? '這是你' : isFollowing(handle) ? '取消追蹤' : '追蹤';
+  followBtn.disabled = handle === currentUser.handle;
+  followBtn.addEventListener('click', () => {
+    if (handle === currentUser.handle) return;
+    if (!requireLogin()) return;
+    toggleFollowing(handle, authorPosts[0]?.authorName || handle);
+    openAuthorModal(handle, triggerEl);
+  });
+
+  const followWrapper = document.createElement('div');
+  followWrapper.className = 'author-modal-controls';
+  followWrapper.style.display = 'flex';
+  followWrapper.style.justifyContent = 'flex-end';
+  followWrapper.appendChild(followBtn);
+  elements.authorModalBody.appendChild(followWrapper);
+
   authorPosts.forEach(p => {
     const div = document.createElement('div');
     div.className = 'glass-panel';
     div.style.padding = '12px';
     div.style.marginBottom = '10px';
+    const deleteButton = (currentUser.handle === p.authorHandle) ? `<button class="btn-follow" style="margin-left:auto;">刪除貼文</button>` : '';
     div.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div style="display:flex;gap:10px;align-items:center;">
-            <img src="${p.authorAvatar || getFallbackAvatar(p.authorHandle)}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;">
-          <div>
-            <div style="font-weight:700;">${p.authorName}</div>
-            <div style="font-size:12px;color:var(--text-muted);">${p.authorHandle} · ${formatTimeAgo(p.timestamp)}</div>
-          </div>
-        </div>
+      <div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:12px;">
+        ${deleteButton}
       </div>
       <div style="margin-top:8px;color:var(--text-main);">${p.content}</div>
       ${p.image ? `<div style="margin-top:8px;"><img src="${p.image}" style="width:100%;border-radius:12px;object-fit:cover;max-height:260px;"></div>` : ''}
+      <div style="margin-top:10px;font-size:12px;color:var(--text-muted);">${formatTimeAgo(p.timestamp)}</div>
     `;
+    if (currentUser.handle === p.authorHandle) {
+      const btn = div.querySelector('button');
+      btn.addEventListener('click', () => {
+        posts = posts.filter(item => item.id !== p.id);
+        persistPosts();
+        renderApp();
+        closeModal(elements.authorModal);
+        showToast('貼文已刪除');
+      });
+    }
     elements.authorModalBody.appendChild(div);
   });
   openModal(elements.authorModal, triggerEl || null);
@@ -1671,6 +1913,7 @@ function handleLogin(e) {
   if (matchedUser) {
     localStorage.setItem('aurawall_logged_in_user', JSON.stringify(matchedUser));
     updateAuthUI();
+    renderApp();
     showToast(`👋 歡迎回來，${matchedUser.username}！`);
     elements.loginForm.reset();
     closeModal(elements.authModal);
@@ -1693,9 +1936,18 @@ function handleRegister(e) {
   // 讀取現有用戶列表 
   const users = JSON.parse(localStorage.getItem('aurawall_users') || '[]');
 
+  if (elements.registerHandleError) elements.registerHandleError.textContent = '';
+  if (elements.registerEmailError) elements.registerEmailError.textContent = '';
+
+  // 檢查帳號 Handle 是否已被使用
+  if (users.some(u => u.handle === handle)) {
+    if (elements.registerHandleError) elements.registerHandleError.textContent = '此帳號已用過，請選擇其他帳號。';
+    return;
+  }
+
   // 檢查 Email 是否已註冊
   if (users.some(u => u.email === email)) {
-    showToast("⚠️ 該信箱已經被註冊過囉！請改用其他信箱。");
+    if (elements.registerEmailError) elements.registerEmailError.textContent = '此電子信箱已被使用，請改用其他信箱。';
     return;
   }
 
@@ -1714,6 +1966,7 @@ function handleRegister(e) {
   // 註冊成功後自動登入
   localStorage.setItem('aurawall_logged_in_user', JSON.stringify(newUser));
   updateAuthUI();
+  renderApp();
   showToast("🎉 註冊成功！已為您自動登入。");
 
   // 重置表單並關閉彈出視窗
@@ -1725,6 +1978,7 @@ function handleRegister(e) {
 window.handleSocialLogin = function (socialUser) {
   localStorage.setItem('aurawall_logged_in_user', JSON.stringify(socialUser));
   updateAuthUI();
+  renderApp();
   showToast(`✨ 已成功使用 ${socialUser.provider === 'google' ? 'Google' : 'Facebook'} 帳戶登入！`);
   if (elements.authModal) closeModal(elements.authModal);
 };

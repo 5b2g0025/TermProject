@@ -44,7 +44,7 @@
             <span class="stat-val" id="stats-likes-count">0</span>
             <span class="stat-lbl">粉絲</span>
           </div>
-          <div class="stat-item">
+          <div class="stat-item stat-clickable" id="stats-following-card" title="點擊查看你追蹤的創作者">
             <span class="stat-val" id="stats-bookmarks-count">0</span>
             <span class="stat-lbl">追蹤</span>
           </div>
@@ -268,10 +268,12 @@
           <i class="fa-solid fa-at"></i>
           <input type="text" placeholder="用戶帳號 Handle (例如: @explorer)" id="register-handle" required>
         </div>
+        <div class="field-error-msg" id="register-handle-error"></div>
         <div class="input-with-icon">
           <i class="fa-regular fa-envelope"></i>
           <input type="email" placeholder="電子信箱 Email" id="register-email" required>
         </div>
+        <div class="field-error-msg" id="register-email-error"></div>
         <div class="input-with-icon">
           <i class="fa-solid fa-lock"></i>
           <input type="password" placeholder="設定密碼 Password" id="register-password" required>
@@ -383,12 +385,23 @@
         <button class="btn-close-modal" id="btn-close-login-required" aria-label="關閉登入提示視窗"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="modal-body">
-        <p style="color:var(--text-main);">您需要先登入帳戶才能編輯個人資料。</p>
+        <p style="color:var(--text-main);">您需要先登入帳戶才能編輯個人資料、按讚、留言、收藏、發佈動態、追蹤。</p>
       </div>
       <div class="modal-footer">
         <button class="btn-modal-cancel" id="btn-login-required-cancel">取消</button>
         <button class="btn-modal-save" id="btn-open-auth-from-login-required">前往登入</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 追蹤清單 Modal -->
+  <div class="modal-overlay" id="following-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="following-modal-title" tabindex="-1" style="display:none;">
+    <div class="modal-content glass-panel">
+      <div class="modal-header">
+        <h3 id="following-modal-title">你追蹤的人</h3>
+        <button class="btn-close-modal" id="btn-close-following-modal" aria-label="關閉追蹤清單視窗"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body" id="following-modal-body" style="max-height:60vh;overflow:auto;"></div>
     </div>
   </div>
 

@@ -322,6 +322,57 @@ textarea {
   margin-top: 2px;
 }
 
+.stat-clickable {
+  cursor: pointer;
+}
+
+.stat-clickable:hover .stat-val,
+.stat-clickable:hover .stat-lbl {
+  color: var(--tag-text);
+}
+
+.following-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.following-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+}
+
+.following-list-item .user-avatar-sm {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.following-list-item .follow-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.following-list-item h5 {
+  font-size: 14px;
+  margin: 0;
+}
+
+.following-list-item span {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.following-list-item .follow-bio {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
 /* Sidebar Menu */
 .sidebar-menu {
   display: flex;
@@ -366,6 +417,51 @@ textarea {
 
 .menu-item.active i {
   color: white;
+}
+
+.sidebar-login-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+}
+
+.sidebar-login-alert i {
+  color: #f59e0b;
+  font-size: 18px;
+  margin-top: 3px;
+}
+
+.sidebar-login-alert strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 4px;
+  color: var(--text-main);
+}
+
+.sidebar-login-alert p {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.action-btn.locked {
+  opacity: 0.5;
+  color: var(--text-muted);
+}
+
+.action-btn.locked:hover {
+  background: none;
+}
+
+button:disabled,
+button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Theme Switch & Info Widget */
@@ -1187,6 +1283,26 @@ textarea {
   font-size: 12px;
   font-weight: 500;
   transition: all var(--transition-fast);
+}
+
+[data-theme="dark"] .widget-card,
+[data-theme="dark"] .widget-card .widget-title,
+[data-theme="dark"] .widget-card .tag-cloud,
+[data-theme="dark"] .widget-card .tag-cloud .cloud-tag,
+[data-theme="dark"] .widget-card .widget-stat-lbl,
+[data-theme="dark"] .widget-card .widget-stat-num,
+[data-theme="dark"] .widget-card .who-to-follow-list,
+[data-theme="dark"] .widget-card .follow-info,
+[data-theme="dark"] .widget-card .follow-info h5,
+[data-theme="dark"] .widget-card .follow-info span,
+[data-theme="dark"] .widget-card .follow-info small,
+[data-theme="dark"] .cloud-tag,
+[data-theme="dark"] #hot-tags-cloud {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .widget-card .cloud-tag {
+  border-color: rgba(255,255,255,0.18);
 }
 
 .cloud-tag:hover {
