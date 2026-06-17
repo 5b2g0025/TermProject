@@ -27,7 +27,8 @@
         <div class="avatar-wrapper">
           <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"
             alt="用戶頭像" class="user-avatar-lg" id="profile-avatar-img">
-          <button class="btn-edit-avatar" id="btn-edit-avatar" title="編輯個人檔案"><i class="fa-solid fa-pen-to-square"></i></button>
+          <button class="btn-edit-avatar" id="btn-edit-avatar" title="編輯個人檔案"><i
+              class="fa-solid fa-pen-to-square"></i></button>
         </div>
         <h2 class="profile-name" id="profile-display-name">
           Aura User
@@ -151,10 +152,12 @@
           </button>
         </div>
         <!-- 圖片 URL 彈出視窗 -->
-        <div class="image-url-popup" id="image-url-popup" role="dialog" aria-modal="false" aria-hidden="true" aria-labelledby="image-url-popup-title" tabindex="-1">
+        <div class="image-url-popup" id="image-url-popup" role="dialog" aria-modal="false" aria-hidden="true"
+          aria-labelledby="image-url-popup-title" tabindex="-1">
           <div class="url-popup-header">
             <h4 id="image-url-popup-title">插入圖片網址</h4>
-            <button class="btn-close-modal" id="btn-close-url-popup" aria-label="關閉圖片網址輸入"><i class="fa-solid fa-xmark"></i></button>
+            <button class="btn-close-modal" id="btn-close-url-popup" aria-label="關閉圖片網址輸入"><i
+                class="fa-solid fa-xmark"></i></button>
           </div>
           <div class="url-input-row">
             <input type="text" id="input-image-url" placeholder="https://...">
@@ -164,11 +167,13 @@
         </div>
 
         <!-- 表情符號彈出視窗 -->
-        <div class="emoji-picker-popup" id="emoji-picker-popup" role="dialog" aria-modal="false" aria-hidden="true" aria-labelledby="emoji-picker-title" tabindex="-1">
+        <div class="emoji-picker-popup" id="emoji-picker-popup" role="dialog" aria-modal="false" aria-hidden="true"
+          aria-labelledby="emoji-picker-title" tabindex="-1">
           <div class="emoji-picker-header">
             <span class="emoji-picker-title" id="emoji-picker-title">選擇表情符號</span>
             <div class="emoji-category-tabs" id="emoji-category-tabs"></div>
-            <button class="btn-close-modal" id="btn-close-emoji-popup" aria-label="關閉表情符號選單"><i class="fa-solid fa-xmark"></i></button>
+            <button class="btn-close-modal" id="btn-close-emoji-popup" aria-label="關閉表情符號選單"><i
+                class="fa-solid fa-xmark"></i></button>
           </div>
           <div class="emoji-grid" id="emoji-grid"></div>
         </div>
@@ -222,7 +227,8 @@
   </div>
 
   <!-- 會員登入 / 註冊彈出視窗 -->
-  <div class="auth-container" id="auth-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-label="會員登入或註冊視窗" tabindex="-1" style="display: none;">
+  <div class="auth-container" id="auth-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-label="會員登入或註冊視窗"
+    tabindex="-1" style="display: none;">
     <div class="auth-card glass-panel">
       <!-- 關閉按鈕 -->
       <button class="btn-close-modal" id="btn-close-auth" aria-label="關閉登入視窗"
@@ -278,39 +284,33 @@
           <i class="fa-solid fa-lock"></i>
           <input type="password" placeholder="設定密碼 Password" id="register-password" required>
         </div>
-        <div class="form-group" style="width: 100%; margin-top: 4px; display: flex; flex-direction: column; gap: 6px;">
-          <label style="font-size: 13px; color: var(--text-muted); font-weight: 600; text-align: left;">選擇你的頭像</label>
-          <div class="reg-avatar-picker-grid" id="reg-avatar-grid">
-            <!-- 動態填入預設頭像選項 -->
-          </div>
-        </div>
-
         <input type="file" id="avatar-upload" accept="image/*" style="display: none;">
 
+        <label
+          style="font-size: 13px; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 8px; margin-top: 4px;">選擇你的頭像</label>
         <div class="avatar-selection-container">
-          <label class="avatar-option active">
+          <label class="avatar-option active" data-avatar-url="https://cdn2.ettoday.net/images/1161/d1161122.jpg">
             <input type="radio" name="avatar" value="dog" checked>
             <img src="https://cdn2.ettoday.net/images/1161/d1161122.jpg" alt="狗">
           </label>
 
-          <label class="avatar-option">
+          <label class="avatar-option"
+            data-avatar-url="https://i.pinimg.com/736x/b6/c2/35/b6c23505a33a6674c1ecd418615ed257.jpg">
             <input type="radio" name="avatar" value="cat">
             <img src="https://i.pinimg.com/736x/b6/c2/35/b6c23505a33a6674c1ecd418615ed257.jpg" alt="貓">
           </label>
 
-          <label class="avatar-option">
+          <label class="avatar-option"
+            data-avatar-url="https://img.touxiangkong.com/uploads/allimg/2021082922/ac4myvzq54k.jpg">
             <input type="radio" name="avatar" value="rabbit">
             <img src="https://img.touxiangkong.com/uploads/allimg/2021082922/ac4myvzq54k.jpg" alt="兔子">
           </label>
 
-          <label class="avatar-option custom-upload" id="upload-trigger" for="avatar-upload">
-            <input type="radio" name="avatar" value="custom" id="custom-avatar-radio">
-            <div class="upload-icon-box">
-              <img src="" id="custom-avatar-preview" style="display: none;">
-              <span id="upload-plus-icon"><img
-                  src="https://wallpapers.com/images/thumbnail/camera-icon-simple-black-9rz2qb53wzbafmil.webp"
-                  alt="相機"></span>
-            </div>
+          <label class="avatar-option custom-upload" for="edit-avatar-upload">
+            <input type="radio" name="edit-avatar" value="custom" id="edit-custom-avatar-radio">
+            <img src="https://t4.ftcdn.net/jpg/00/83/10/05/360_F_83100533_anFciSlucZEdY6SRJLUPR0BHo0PagJF6.jpg"
+              alt="上傳自訂頭像" id="edit-custom-avatar-preview"
+              style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
           </label>
         </div>
 
@@ -321,7 +321,8 @@
       </form>
 
       <!-- 分隔線與第三方登入 -->
-      <div class="social-login-section" id="social-login-section" style="display: block; width: 100%; margin-top: 24px; text-align: center;">
+      <div class="social-login-section" id="social-login-section"
+        style="display: block; width: 100%; margin-top: 24px; text-align: center;">
         <div
           style="display: flex; align-items: center; margin-bottom: 16px; color: var(--text-muted); font-size: 12px;">
           <div style="flex: 1; height: 1px; background: var(--glass-border);"></div>
@@ -343,26 +344,57 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- 編輯個人資訊 Modal -->
-  <div class="modal-overlay" id="profile-edit-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="profile-edit-modal-title" tabindex="-1" style="display:none;">
+  <div class="modal-overlay" id="profile-edit-modal" role="dialog" aria-modal="true" aria-hidden="true"
+    aria-labelledby="profile-edit-modal-title" tabindex="-1" style="display:none;">
     <div class="modal-content glass-panel">
       <div class="modal-header">
         <h3 id="profile-edit-modal-title">編輯個人檔案</h3>
-        <button class="btn-close-modal" id="btn-close-profile-edit" aria-label="關閉編輯個人檔案視窗"><i class="fa-solid fa-xmark"></i></button>
+        <button class="btn-close-modal" id="btn-close-profile-edit" aria-label="關閉編輯個人檔案視窗"><i
+            class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="modal-body">
         <div style="display:flex;gap:12px;align-items:center;">
-          <img src="" id="profile-edit-avatar-preview" class="user-avatar-lg" style="width:72px;height:72px;border-radius:50%;">
-          <div style="flex:1;">
-            <label>顯示名稱</label>
-            <input type="text" id="input-edit-username" placeholder="顯示名稱">
-            <label>用戶 ID (Handle)</label>
-            <input type="text" id="input-edit-handle" placeholder="@your_handle">
+          <img src="" id="profile-edit-avatar-preview" class="user-avatar-lg"
+            style="width:72px;height:72px;border-radius:50%;">
+          <div style="flex:1; display:flex; flex-direction:column; gap:14px;">
+            <div class="profile-edit-field">
+              <label>顯示名稱</label>
+              <input type="text" id="input-edit-username" placeholder="顯示名稱">
+            </div>
+            <div class="profile-edit-field">
+              <label>用戶 ID </label>
+              <input type="text" id="input-edit-handle" placeholder="@your_handle">
+            </div>
           </div>
         </div>
 
         <div class="form-group">
-          <label>頭像圖片 URL</label>
-          <input type="text" id="input-edit-avatar-url" placeholder="https://...">
+          <label>選擇你的頭像</label>
+          <div class="avatar-selection-container" id="edit-avatar-selection">
+            <label class="avatar-option" data-avatar-url="https://cdn2.ettoday.net/images/1161/d1161122.jpg">
+              <input type="radio" name="edit-avatar" value="preset-0">
+              <img src="https://cdn2.ettoday.net/images/1161/d1161122.jpg" alt="頭像 1">
+            </label>
+            <label class="avatar-option"
+              data-avatar-url="https://i.pinimg.com/736x/b6/c2/35/b6c23505a33a6674c1ecd418615ed257.jpg">
+              <input type="radio" name="edit-avatar" value="preset-1">
+              <img src="https://i.pinimg.com/736x/b6/c2/35/b6c23505a33a6674c1ecd418615ed257.jpg" alt="頭像 2">
+            </label>
+            <label class="avatar-option"
+              data-avatar-url="https://img.touxiangkong.com/uploads/allimg/2021082922/ac4myvzq54k.jpg">
+              <input type="radio" name="edit-avatar" value="preset-2">
+              <img src="https://img.touxiangkong.com/uploads/allimg/2021082922/ac4myvzq54k.jpg" alt="頭像 3">
+            </label>
+            <label class="avatar-option custom-upload"
+              data-avatar-url="https://t4.ftcdn.net/jpg/00/83/10/05/360_F_83100533_anFciSlucZEdY6SRJLUPR0BHo0PagJF6.jpg"
+              for="edit-avatar-upload">
+              <input type="radio" name="edit-avatar" value="custom" id="edit-custom-avatar-radio">
+              <img src="https://t4.ftcdn.net/jpg/00/83/10/05/360_F_83100533_anFciSlucZEdY6SRJLUPR0BHo0PagJF6.jpg"
+                alt="上傳自訂頭像" id="edit-custom-avatar-preview"
+                style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+            </label>
+          </div>
+          <input type="file" id="edit-avatar-upload" accept="image/*" style="display: none;">
         </div>
 
         <div class="form-group">
@@ -378,11 +410,13 @@
   </div>
 
   <!-- 未登入提示 Modal -->
-  <div class="modal-overlay" id="login-required-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="login-required-modal-title" tabindex="-1" style="display:none;">
+  <div class="modal-overlay" id="login-required-modal" role="dialog" aria-modal="true" aria-hidden="true"
+    aria-labelledby="login-required-modal-title" tabindex="-1" style="display:none;">
     <div class="modal-content glass-panel">
       <div class="modal-header">
         <h3 id="login-required-modal-title">請先登入</h3>
-        <button class="btn-close-modal" id="btn-close-login-required" aria-label="關閉登入提示視窗"><i class="fa-solid fa-xmark"></i></button>
+        <button class="btn-close-modal" id="btn-close-login-required" aria-label="關閉登入提示視窗"><i
+            class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="modal-body">
         <p style="color:var(--text-main);">您需要先登入帳戶才能編輯個人資料、按讚、留言、收藏、發佈動態、追蹤。</p>
@@ -395,22 +429,26 @@
   </div>
 
   <!-- 追蹤清單 Modal -->
-  <div class="modal-overlay" id="following-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="following-modal-title" tabindex="-1" style="display:none;">
+  <div class="modal-overlay" id="following-modal" role="dialog" aria-modal="true" aria-hidden="true"
+    aria-labelledby="following-modal-title" tabindex="-1" style="display:none;">
     <div class="modal-content glass-panel">
       <div class="modal-header">
         <h3 id="following-modal-title">你追蹤的人</h3>
-        <button class="btn-close-modal" id="btn-close-following-modal" aria-label="關閉追蹤清單視窗"><i class="fa-solid fa-xmark"></i></button>
+        <button class="btn-close-modal" id="btn-close-following-modal" aria-label="關閉追蹤清單視窗"><i
+            class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="modal-body" id="following-modal-body" style="max-height:60vh;overflow:auto;"></div>
     </div>
   </div>
 
   <!-- 作者貼文檢視 Modal -->
-  <div class="modal-overlay" id="author-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="author-modal-title" tabindex="-1" style="display:none;">
+  <div class="modal-overlay" id="author-modal" role="dialog" aria-modal="true" aria-hidden="true"
+    aria-labelledby="author-modal-title" tabindex="-1" style="display:none;">
     <div class="modal-content glass-panel">
       <div class="modal-header">
         <h3 id="author-modal-title">作者貼文</h3>
-        <button class="btn-close-modal" id="btn-close-author-modal" aria-label="關閉作者貼文視窗"><i class="fa-solid fa-xmark"></i></button>
+        <button class="btn-close-modal" id="btn-close-author-modal" aria-label="關閉作者貼文視窗"><i
+            class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="modal-body" id="author-modal-body" style="max-height:60vh;overflow:auto;"></div>
     </div>

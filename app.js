@@ -553,7 +553,10 @@ const elements = {
   btnSaveProfileEdit: document.getElementById('btn-save-profile-edit'),
   inputEditUsername: document.getElementById('input-edit-username'),
   inputEditHandle: document.getElementById('input-edit-handle'),
-  inputEditAvatarUrl: document.getElementById('input-edit-avatar-url'),
+  editAvatarSelection: document.getElementById('edit-avatar-selection'),
+  editAvatarUpload: document.getElementById('edit-avatar-upload'),
+  editCustomAvatarPreview: document.getElementById('edit-custom-avatar-preview'),
+  editUploadPlusIcon: document.getElementById('edit-upload-plus-icon'),
   profileEditAvatarPreview: document.getElementById('profile-edit-avatar-preview'),
   profileColorOptions: document.getElementById('profile-color-options'),
   authorModal: document.getElementById('author-modal'),
@@ -901,10 +904,6 @@ function initEventListeners() {
   if (elements.btnCloseProfileEdit) elements.btnCloseProfileEdit.addEventListener('click', closeProfileEditModal);
   if (elements.btnCancelProfileEdit) elements.btnCancelProfileEdit.addEventListener('click', closeProfileEditModal);
   if (elements.btnSaveProfileEdit) elements.btnSaveProfileEdit.addEventListener('click', saveProfileEdits);
-  if (elements.inputEditAvatarUrl) elements.inputEditAvatarUrl.addEventListener('input', (e) => {
-    const v = e.target.value.trim();
-    elements.profileEditAvatarPreview.src = v || currentUser.avatar;
-  });
 
   if (elements.btnCloseAuthorModal) elements.btnCloseAuthorModal.addEventListener('click', () => { closeModal(elements.authorModal); });
   if (elements.btnCloseFollowingModal) elements.btnCloseFollowingModal.addEventListener('click', () => { closeModal(elements.followingModal); });
@@ -1340,7 +1339,7 @@ function renderPostFormTags() {
   currentPostTags.forEach((tag, index) => {
     const span = document.createElement('span');
     span.className = 'post-form-tag-badge';
-    span.style.cssText = "background: rgba(59,130,246,0.15); color:var(--tag-text); padding: 2px 8px; border-radius:12px; font-size:12px; margin-right:6px; display:inline-flex; align-items:center; gap:4px; margin-bottom:4px;";
+    span.style.cssText = "background: rgba(59,130,246,0.15); color:var(--tag-text-color); padding: 2px 8px; border-radius:12px; font-size:12px; margin-right:6px; display:inline-flex; align-items:center; gap:4px; margin-bottom:4px;";
     span.innerHTML = `#${tag} <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:10px;"></i>`;
     span.querySelector('i').addEventListener('click', () => {
       currentPostTags.splice(index, 1);
@@ -1377,7 +1376,7 @@ function updateStatsCounter() {
 
 // 將內文的 #標籤 轉化為可點擊藍色樣式
 function linkifyTags(text) {
-  return text.replace(/#([\u4e00-\u9fa5_a-zA-Z0-9]+)/g, '<a href="#" class="clickable-tag" style="color:var(--tag-text); text-decoration:none; font-weight:500;">#$1</a>');
+  return text.replace(/#([\u4e00-\u9fa5_a-zA-Z0-9]+)/g, '<a href="#" class="clickable-tag" style="color:var(--tag-text-color); text-decoration:none; font-weight:500;">#$1</a>');
 }
 
 // 轉換漂亮的時間差格式
@@ -1471,6 +1470,7 @@ function updateAuthUI() {
     if (elements.menuAuth) {
       elements.menuAuth.querySelector('i').className = "fa-solid fa-right-from-bracket";
     }
+    syncCurrentUserPosts(currentUser.handle, currentUser.username, currentUser.avatar);
   } else {
     currentUser = DEFAULT_USER;
     currentUser.following = [];
@@ -1505,6 +1505,26 @@ function updateAuthUI() {
   updatePostFormState();
 }
 
+function syncCurrentUserPosts(handle, username, avatar) {
+  if (!handle) return;
+  let changed = false;
+  posts.forEach(post => {
+    if (post.authorHandle === handle) {
+      if (username && post.authorName !== username) {
+        post.authorName = username;
+        changed = true;
+      }
+      if (avatar && post.authorAvatar !== avatar) {
+        post.authorAvatar = avatar;
+        changed = true;
+      }
+    }
+  });
+  if (changed) {
+    persistPosts();
+  }
+}
+
 // -----------------------------
 // Profile Edit Modal Actions
 // -----------------------------
@@ -1519,8 +1539,8 @@ function openProfileEditModal() {
   if (!elements.profileEditModal) return;
   elements.inputEditUsername.value = currentUser.username || '';
   elements.inputEditHandle.value = currentUser.handle || '';
-  elements.inputEditAvatarUrl.value = currentUser.avatar || '';
   elements.profileEditAvatarPreview.src = currentUser.avatar;
+  selectAvatarOption(elements.editAvatarSelection, currentUser.avatar);
   renderProfileColorOptions();
   openModal(elements.profileEditModal, elements.btnEditAvatar);
 }
@@ -1676,7 +1696,7 @@ function saveProfileEdits() {
   const name = elements.inputEditUsername.value.trim();
   let handle = elements.inputEditHandle.value.trim();
   if (handle && !handle.startsWith('@')) handle = '@' + handle;
-  const avatarUrl = elements.inputEditAvatarUrl.value.trim();
+  const avatarUrl = getSelectedEditAvatarUrl();
   if (name) currentUser.username = name;
   if (handle) currentUser.handle = handle;
   if (avatarUrl) currentUser.avatar = avatarUrl;
@@ -1842,45 +1862,124 @@ function switchAuthTab(tab) {
   }
 }
 
-// 渲染註冊時的頭像挑選清單
-document.addEventListener('DOMContentLoaded', () => {
-  const fileInput = document.getElementById('avatar-upload');
-  const previewImg = document.getElementById('custom-avatar-preview');
-  const plusIcon = document.getElementById('upload-plus-icon');
-  const customRadio = document.getElementById('custom-avatar-radio');
-  const avatarOptions = document.querySelectorAll('.avatar-option');
+function selectAvatarOption(containerEl, avatarUrl) {
+  if (!containerEl) return;
+  const options = containerEl.querySelectorAll('.avatar-option');
+  let matched = false;
+  options.forEach(option => {
+    const radio = option.querySelector('input[type="radio"]');
+    const img = option.querySelector('img');
+    const optionUrl = option.dataset.avatarUrl || (img ? img.src : '');
+    const isCustom = option.classList.contains('custom-upload');
+    if (!isCustom && avatarUrl && optionUrl === avatarUrl) {
+      option.classList.add('active');
+      if (radio) radio.checked = true;
+      matched = true;
+    } else {
+      option.classList.remove('active');
+      if (radio) radio.checked = false;
+    }
+  });
 
-  // 1. 處理點擊頭像的外框選取特效
+  const customOption = containerEl.querySelector('.custom-upload');
+  const customPreview = containerEl.querySelector('[id$="custom-avatar-preview"]');
+  const plusIcon = containerEl.querySelector('[id$="upload-plus-icon"]');
+
+  if (customOption && customPreview) {
+    if (!matched && avatarUrl) {
+      customOption.classList.add('active');
+      const radio = customOption.querySelector('input[type="radio"]');
+      if (radio) radio.checked = true;
+      customPreview.src = avatarUrl;
+      customPreview.style.display = 'block';
+      if (plusIcon) plusIcon.style.display = 'none';
+    } else {
+      customOption.classList.remove('active');
+      const radio = customOption.querySelector('input[type="radio"]');
+      if (radio) radio.checked = false;
+      // 若有相機預設圖就保留顯示，只在有 plusIcon（舊版）才隱藏預覽
+      if (plusIcon) {
+        customPreview.style.display = 'none';
+        plusIcon.style.display = 'flex';
+      }
+    }
+  }
+}
+
+function getSelectedAvatarUrl(containerEl) {
+  if (!containerEl) return '';
+  const selectedOption = containerEl.querySelector('.avatar-option.active');
+  if (!selectedOption) return '';
+  const isCustom = selectedOption.classList.contains('custom-upload');
+  if (isCustom) {
+    const customPreview = containerEl.querySelector('[id$="custom-avatar-preview"]');
+    return customPreview && customPreview.src ? customPreview.src : '';
+  }
+  return selectedOption.dataset.avatarUrl || '';
+}
+
+function setupAvatarSelection(containerSelector, fileInputId, customRadioId) {
+  const containerEl = document.querySelector(containerSelector);
+  if (!containerEl) return;
+  const fileInput = document.getElementById(fileInputId);
+  const customRadio = document.getElementById(customRadioId);
+  const avatarOptions = containerEl.querySelectorAll('.avatar-option');
+
   avatarOptions.forEach(option => {
     option.addEventListener('click', () => {
       avatarOptions.forEach(opt => opt.classList.remove('active'));
       option.classList.add('active');
+      const radio = option.querySelector('input[type="radio"]');
+      if (radio) radio.checked = true;
     });
   });
 
-  // 2. 【已修正】移除了原本的 uploadTrigger.addEventListener('click', ...)
-  // 靠 HTML 的 <label> 標籤自然觸發檔案視窗即可，不會再跳出第二次！
-
-  // 3. 當使用者選好圖片（或關閉視窗）後的處理
-  fileInput.addEventListener('change', function () {
-    const file = this.files[0];
-
-    if (file) {
-      const reader = new FileReader();
-
-      reader.onload = function (e) {
-        // 顯示預覽圖，隱藏原本的 📷 圖標
-        previewImg.src = e.target.result;
-        previewImg.style.display = 'block';
-        plusIcon.style.display = 'none';
-
-        // 自動勾選自訂頭像的 radio 
-        customRadio.checked = true;
+  if (fileInput) {
+    fileInput.addEventListener('change', function () {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const previewImg = containerEl.querySelector('[id$="custom-avatar-preview"]');
+          const plusIcon = containerEl.querySelector('[id$="upload-plus-icon"]');
+          if (previewImg) {
+            previewImg.src = e.target.result;
+            previewImg.style.display = 'block';
+          }
+          if (plusIcon) plusIcon.style.display = 'none';
+          if (customRadio) customRadio.checked = true;
+          const customOption = containerEl.querySelector('.custom-upload');
+          if (customOption) {
+            avatarOptions.forEach(opt => opt.classList.remove('active'));
+            customOption.classList.add('active');
+          }
+        };
+        reader.readAsDataURL(file);
       }
+    });
+  }
+}
 
-      reader.readAsDataURL(file);
-    }
-  });
+function renderRegisterAvatars() {
+  const registerContainer = document.querySelector('#register-form .avatar-selection-container');
+  if (!registerContainer) return;
+  selectAvatarOption(registerContainer, selectedRegisterAvatar || PRESET_AVATARS[0]);
+}
+
+function getSelectedRegisterAvatar() {
+  const registerContainer = document.querySelector('#register-form .avatar-selection-container');
+  return getSelectedAvatarUrl(registerContainer) || PRESET_AVATARS[0];
+}
+
+function getSelectedEditAvatarUrl() {
+  const editContainer = document.querySelector('#edit-avatar-selection');
+  return getSelectedAvatarUrl(editContainer) || currentUser.avatar || PRESET_AVATARS[0];
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  setupAvatarSelection('#register-form .avatar-selection-container', 'avatar-upload', 'custom-avatar-radio');
+  setupAvatarSelection('#edit-avatar-selection', 'edit-avatar-upload', 'edit-custom-avatar-radio');
+  renderRegisterAvatars();
 });
 
 // 處理 Email 登入提交
@@ -1956,7 +2055,7 @@ function handleRegister(e) {
     handle: handle,
     email: email,
     password: password,
-    avatar: selectedRegisterAvatar,
+    avatar: getSelectedRegisterAvatar(),
     provider: 'local'
   };
 

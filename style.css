@@ -49,6 +49,7 @@
   --input-bg: rgba(9, 10, 15, 0.6);
   --tag-bg: rgba(99, 102, 241, 0.15);
   --tag-text: #818cf8;
+  --tag-text-color: #ffffff;
   --scroll-thumb: rgba(255, 255, 255, 0.15);
   --scroll-thumb-hover: rgba(255, 255, 255, 0.25);
   --highlight-color: rgba(99, 102, 241, 0.1);
@@ -70,6 +71,7 @@
   --input-bg: rgba(243, 244, 246, 0.8);
   --tag-bg: rgba(99, 102, 241, 0.08);
   --tag-text: #4f46e5;
+  --tag-text-color: #333333;
   --scroll-thumb: rgba(0, 0, 0, 0.15);
   --scroll-thumb-hover: rgba(0, 0, 0, 0.25);
   --highlight-color: rgba(99, 102, 241, 0.05);
@@ -1044,13 +1046,19 @@ button[disabled] {
 
 .post-tag {
   background: var(--tag-bg);
-  color: var(--tag-text);
+  color: var(--tag-text-color);
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
   transition: all var(--transition-fast);
   cursor: pointer;
+}
+
+.clickable-tag {
+  color: var(--tag-text-color);
+  text-decoration: none;
+  font-weight: 500;
 }
 
 .post-tag:hover {
@@ -1267,6 +1275,24 @@ button[disabled] {
   gap: 8px;
 }
 
+#profile-edit-modal .modal-body .profile-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#profile-edit-modal .modal-body label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+#profile-edit-modal .modal-body input {
+  width: 100%;
+}
+
 /* Tag Cloud Widget */
 .tag-cloud {
   display: flex;
@@ -1274,10 +1300,14 @@ button[disabled] {
   gap: 8px;
 }
 
+.trending-tags {
+  color: var(--tag-text-color);
+}
+
 .cloud-tag {
   background: var(--input-bg);
   border: 1px solid var(--glass-border);
-  color: var(--text-muted);
+  color: var(--tag-text-color);
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 12px;
@@ -1285,23 +1315,80 @@ button[disabled] {
   transition: all var(--transition-fast);
 }
 
-[data-theme="dark"] .widget-card,
-[data-theme="dark"] .widget-card .widget-title,
-[data-theme="dark"] .widget-card .tag-cloud,
-[data-theme="dark"] .widget-card .tag-cloud .cloud-tag,
-[data-theme="dark"] .widget-card .widget-stat-lbl,
-[data-theme="dark"] .widget-card .widget-stat-num,
-[data-theme="dark"] .widget-card .who-to-follow-list,
-[data-theme="dark"] .widget-card .follow-info,
-[data-theme="dark"] .widget-card .follow-info h5,
-[data-theme="dark"] .widget-card .follow-info span,
-[data-theme="dark"] .widget-card .follow-info small,
-[data-theme="dark"] .cloud-tag,
-[data-theme="dark"] #hot-tags-cloud {
-  color: #ffffff !important;
+/* 熱門標籤按鈕（JS 動態生成，class = tag-item） */
+.tag-item {
+  background: var(--input-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--tag-text-color);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
 }
 
-[data-theme="dark"] .widget-card .cloud-tag {
+.tag-item small {
+  opacity: 0.65;
+  font-size: 10px;
+}
+
+.tag-item:hover,
+.tag-item.active {
+  background: var(--grad-primary);
+  color: #ffffff;
+  border-color: transparent;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
+}
+
+.tag-item.active small,
+.tag-item:hover small {
+  opacity: 0.85;
+}
+
+/* 深色模式：右側欄所有文字白色 */
+[data-theme="dark"] .widgets .widget-card,
+[data-theme="dark"] .widgets .widget-card .widget-title,
+[data-theme="dark"] .widgets .widget-card h3,
+[data-theme="dark"] .widgets .widget-card .widget-stat-lbl,
+[data-theme="dark"] .widgets .widget-card .who-to-follow-list,
+[data-theme="dark"] .widgets .widget-card .follow-info,
+[data-theme="dark"] .widgets .widget-card .follow-info h5,
+[data-theme="dark"] .widgets .widget-card .follow-info span,
+[data-theme="dark"] .widgets .widget-card .follow-info small,
+[data-theme="dark"] .cloud-tag,
+[data-theme="dark"] .tag-item,
+[data-theme="dark"] #hot-tags-cloud {
+  color: #ffffff;
+}
+
+/* 深色模式：widget-stat-num 保留漸層，不強制白色 */
+[data-theme="dark"] .widgets .widget-card .widget-stat-num {
+  background: var(--grad-accent);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* 深色模式：保留三個圖示的原本顏色，不被白色覆蓋 */
+[data-theme="dark"] .widget-title i.fa-chart-line {
+  color: var(--tag-text) !important;
+  -webkit-text-fill-color: var(--tag-text) !important;
+}
+[data-theme="dark"] .widget-title i.fa-fire {
+  color: #ff7e40 !important;
+  -webkit-text-fill-color: #ff7e40 !important;
+}
+[data-theme="dark"] .widget-title i.fa-user-plus {
+  color: #10b981 !important;
+  -webkit-text-fill-color: #10b981 !important;
+}
+
+[data-theme="dark"] .widget-card .cloud-tag,
+[data-theme="dark"] .widget-card .tag-item {
   border-color: rgba(255,255,255,0.18);
 }
 
