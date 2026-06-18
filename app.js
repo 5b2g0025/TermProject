@@ -1529,6 +1529,10 @@ function renderPosts() {
           showToast("💡 您不能私訊給自己喔！");
           return;
         }
+        if (!canDMUser(post.authorHandle)) {
+          showToast(`🔒 你和 ${post.authorName} 至少需要一方追蹤對方才能私訊`);
+          return;
+        }
         switchMenu('chat');
         selectChatMainTarget({
           handle: post.authorHandle,
@@ -2025,6 +2029,17 @@ function persistCurrentUser() {
 
 function isFollowing(handle) {
   return Array.isArray(currentUser.following) && currentUser.following.includes(handle);
+}
+
+// 私訊權限判斷：至少一方追蹤對方即可
+function canDMUser(targetHandle) {
+  if (!isLoggedIn()) return false;
+  // 我追蹤對方
+  const iFollowThem = isFollowing(targetHandle);
+  // 對方追蹤我 (從 allUsers 找對方的 following 陣列)
+  const targetUser = allUsers.find(u => u.handle === targetHandle);
+  const theyFollowMe = targetUser && Array.isArray(targetUser.following) && targetUser.following.includes(currentUser.handle);
+  return iFollowThem || theyFollowMe;
 }
 
 function toggleFollowing(handle, name) {
@@ -3095,11 +3110,17 @@ function renderChatMainUsersList() {
     `;
     return;
   }
-  
-  contacts.forEach(user => {
+
+  // 分成可私訊與不可私訊兩組
+  const allowed = contacts.filter(u => canDMUser(u.handle));
+  const locked  = contacts.filter(u => !canDMUser(u.handle));
+
+  function buildItem(user, isLocked) {
     const item = document.createElement('div');
     const isActive = currentChatMainTarget && currentChatMainTarget.handle === user.handle;
-    item.className = `chat-user-item ${isActive ? 'active' : ''}`;
+    item.className = `chat-user-item ${isActive ? 'active' : ''} ${isLocked ? 'locked-item' : ''}`;
+    item.style.opacity = isLocked ? '0.45' : '1';
+    item.style.cursor  = isLocked ? 'not-allowed' : 'pointer';
     
     const avatarSrc = user.avatar || getFallbackAvatar(user.handle);
     
@@ -3108,15 +3129,34 @@ function renderChatMainUsersList() {
       <div class="chat-user-item-info">
         <span class="chat-user-item-name">${escapeHTML(user.username)}</span>
         <span class="chat-user-item-handle">${escapeHTML(user.handle)}</span>
+        ${isLocked ? '<span style="font-size:10px;color:var(--text-muted);">🔒 需要互追才能私訊</span>' : '<span style="font-size:10px;color:var(--tag-text);">💬 可以私訊</span>'}
       </div>
     `;
     
     item.addEventListener('click', () => {
+      if (isLocked) {
+        showToast(`🔒 你和 ${user.username} 至少需要一方追蹤對方才能私訊`);
+        return;
+      }
       selectChatMainTarget(user);
     });
     
     usersListEl.appendChild(item);
-  });
+  }
+
+  // 可私訊的放上面
+  allowed.forEach(u => buildItem(u, false));
+
+  // 分隔線（如果有鎖定用戶）
+  if (locked.length > 0 && allowed.length > 0) {
+    const sep = document.createElement('div');
+    sep.style.cssText = 'border-top: 1px solid var(--glass-border); margin: 6px 8px; padding-top: 6px; font-size: 11px; color: var(--text-muted); padding-left: 4px;';
+    sep.textContent = '尚未互追';
+    usersListEl.appendChild(sep);
+  }
+
+  // 無法私訊的放下面（灰暗顯示）
+  locked.forEach(u => buildItem(u, true));
 }
 
 function renderChatMainRoom() {
@@ -3178,6 +3218,11 @@ function renderChatMainRoom() {
 }
 
 function selectChatMainTarget(user) {
+  // 驗證追蹤關係
+  if (!canDMUser(user.handle)) {
+    showToast(`🔒 你和 ${user.username} 至少需要一方追蹤對方才能私訊`);
+    return;
+  }
   currentChatMainTarget = user;
   
   // Refresh contact list active status
