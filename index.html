@@ -462,49 +462,7 @@
     </div>
   </div>
 
-  <!-- 私訊聊天室 Widget -->
-  <div class="chat-widget-container" id="chat-widget" style="display: none;">
-    <!-- 收合狀態的浮動按鈕 -->
-    <button class="chat-trigger-btn glass-panel" id="chat-trigger-btn">
-      <i class="fa-regular fa-comments"></i>
-      <span class="chat-trigger-text">私訊聊天</span>
-      <span class="chat-unread-badge" id="chat-unread-badge" style="display: none;"></span>
-    </button>
 
-    <!-- 展開狀態的聊天面板 -->
-    <div class="chat-panel glass-panel" id="chat-panel" style="display: none;">
-      <div class="chat-panel-header">
-        <div class="chat-target-info">
-          <img src="" alt="avatar" class="chat-target-avatar" id="chat-target-avatar">
-          <div class="chat-target-meta">
-            <span class="chat-target-name" id="chat-target-name">未選取聯絡人</span>
-            <span class="chat-target-handle" id="chat-target-handle"></span>
-          </div>
-        </div>
-        <div class="chat-header-actions">
-          <button class="chat-btn-close" id="btn-close-chat" title="最小化聊天室">
-            <i class="fa-solid fa-minus"></i>
-          </button>
-        </div>
-      </div>
-
-      <!-- 訊息歷史 -->
-      <div class="chat-messages-body" id="chat-messages-body">
-        <div class="chat-empty-state">
-          <i class="fa-regular fa-paper-plane"></i>
-          <p>點擊動態牆上的「私訊」按鈕<br>開始與創作者進行私密對話 ✨</p>
-        </div>
-      </div>
-
-      <!-- 輸入框區域 -->
-      <form class="chat-input-area" id="chat-input-form">
-        <input type="text" placeholder="輸入訊息..." class="chat-input" id="chat-input-text-field" required autocomplete="off">
-        <button type="submit" class="chat-btn-send" id="btn-send-chat-msg" title="發送訊息">
-          <i class="fa-solid fa-paper-plane"></i>
-        </button>
-      </form>
-    </div>
-  </div>
 
   <!-- Firebase Compat SDKs (v10) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
