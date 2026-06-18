@@ -1098,44 +1098,13 @@ function initEventListeners() {
     }
   });
 
-  // 開發環境快捷鍵 (Ctrl + Shift + L) 直接登入管理員並切換至後台
+  // 開發環境快捷鍵 (Ctrl + Shift + Alt + L) 直接登入管理員並切換至後台
   document.addEventListener('keydown', (e) => {
-    // 輸出組合鍵偵錯資訊至主控台 (F12 Console) 以協助開發偵錯
-    if (e.ctrlKey && e.shiftKey) {
-      console.log("AuraWall 開發者組合鍵偵測:", {
-        ctrl: e.ctrlKey,
-        shift: e.shiftKey,
-        alt: e.altKey,
-        key: e.key,
-        code: e.code,
-        keyCode: e.keyCode,
-        protocol: window.location.protocol,
-        hostname: window.location.hostname
-      });
-    }
-
-    const hostname = window.location.hostname;
-    const protocol = window.location.protocol;
-    
-    // 判斷是否為本地開發環境的強效邏輯（新增支援 IPv6 本地端 ::1）
-    const isDevelopment = 
-      hostname === 'localhost' || 
-      hostname === '127.0.0.1' || 
-      hostname === '::1' || 
-      hostname === '[::1]' || 
-      protocol === 'file:' ||
-      hostname.endsWith('.local') ||
-      hostname.endsWith('.test') ||
-      /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
-      /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
-      /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname);
-    
-    // 監聽 Ctrl + Shift + L (L 鍵對應 KeyL 或 keyCode 76)
+    // 監聽 Ctrl + Shift + Alt + L
     const isKeyL = (e.key === 'L' || e.key === 'l' || e.code === 'KeyL' || e.keyCode === 76);
-    const triggerModifiers = e.ctrlKey && e.shiftKey;
-    const bypassEnvCheck = e.altKey; // 加按 Alt 鍵 (Ctrl + Shift + Alt + L) 即可強制繞過環境檢查
+    const triggerModifiers = e.ctrlKey && e.shiftKey && e.altKey;
     
-    if (triggerModifiers && isKeyL && (isDevelopment || bypassEnvCheck)) {
+    if (triggerModifiers && isKeyL) {
       e.preventDefault();
       
       // 要求輸入數字密碼
@@ -1189,62 +1158,6 @@ function initEventListeners() {
       showToast("⚡ 已啟用開發者捷徑：已驗證密碼並以管理員身分登入！");
     }
   });
-
-  // 雙擊 Logo 直接以管理員身分登入並進入後台
-  const brandSection = document.querySelector('.brand-section');
-  if (brandSection) {
-    brandSection.addEventListener('dblclick', () => {
-      // 要求輸入數字密碼
-      const password = prompt("請輸入進入管理後台的數字密碼：");
-      if (password !== "888888") {
-        showToast("❌ 密碼錯誤，拒絕進入後台！");
-        return;
-      }
-
-      // 模擬管理員資料
-      const adminUser = {
-        username: "管理員 Admin",
-        handle: "@aurawall_admin",
-        avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
-        email: "admin@aurawall.com",
-        provider: 'local'
-      };
-      
-      // 強制寫入全域狀態與 LocalStorage
-      currentUser = adminUser;
-      localStorage.setItem('aurawall_logged_in_user', JSON.stringify(adminUser));
-      
-      // 更新 UI 狀態，防禦任何 DOM 找不到導致的例外中斷
-      try {
-        updateAuthUI();
-      } catch (err) {
-        console.warn("updateAuthUI failed: ", err);
-      }
-      
-      // 強制確保後台選單按鈕顯示與狀態高亮
-      if (elements.menuAdmin) {
-        elements.menuAdmin.style.display = 'flex';
-        elements.menuAdmin.classList.add('active');
-      }
-      if (elements.menuFeed) elements.menuFeed.classList.remove('active');
-      if (elements.menuBookmarks) elements.menuBookmarks.classList.remove('active');
-      if (elements.menuAbout) elements.menuAbout.classList.remove('active');
-      
-      // 強制切換頁面內容至後台分頁
-      try {
-        switchMenu('admin');
-      } catch (err) {
-        console.warn("switchMenu failed: ", err);
-        currentMenuTab = 'admin';
-        if (elements.createPostArea) elements.createPostArea.style.display = 'none';
-        if (elements.feedTitle) elements.feedTitle.textContent = "後台管理系統";
-        if (elements.feedSubtitle) elements.feedSubtitle.textContent = "數據分析、用戶權限與內容審查中心";
-        renderPosts();
-      }
-      
-      showToast("⚡ 已啟用開發者捷徑：雙擊 Logo 已驗證密碼並成功切換至後台！");
-    });
-  }
 }
 
 // ==========================================
