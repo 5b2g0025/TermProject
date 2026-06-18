@@ -641,6 +641,11 @@ function initTheme() {
   if (elements.themeIcon) {
     elements.themeIcon.className = savedTheme === 'light' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
   }
+  // 還原色帶顏色
+  const savedColor = localStorage.getItem('aurawall_accent_color');
+  if (savedColor) {
+    setTimeout(() => applyAccentColor(savedColor), 0);
+  }
 }
 
 // 如果貼文數不多，複製現有貼文直到至少有 20 筆，讓開啟頁面時能看到很多創作者貼文
@@ -834,12 +839,13 @@ function initEventListeners() {
     renderPosts();
   });
 
-  // 圖片附檔選單開關
+  // 圖片附檔：直接觸發本地上傳，不開啟 URL 輸入視窗
   elements.btnTriggerImagePopup.addEventListener('click', (e) => {
+    e.preventDefault();
     e.stopPropagation();
-    const isOpen = elements.imageUrlPopup.style.display === 'block';
-    if (isOpen) closePopup(elements.imageUrlPopup); else openPopup(elements.imageUrlPopup, elements.inputImageUrl);
     closePopup(elements.emojiPickerPopup);
+    const fi = document.getElementById('file-upload-input');
+    if (fi) fi.click();
   });
   elements.btnCloseUrlPopup.addEventListener('click', () => {
     closePopup(elements.imageUrlPopup);
@@ -897,6 +903,18 @@ function initEventListeners() {
   if (elements.btnEditAvatar) {
     elements.btnEditAvatar.addEventListener('click', (e) => {
       e.stopPropagation();
+      if (!isLoggedIn()) {
+        // 直接操作 DOM 確保視窗顯示
+        const modal = document.getElementById('login-required-modal');
+        if (modal) {
+          modal.classList.remove('closing');
+          modal.classList.add('open');
+          modal.style.display = 'flex';
+          modal.setAttribute('aria-hidden', 'false');
+          modal.setAttribute('aria-modal', 'true');
+        }
+        return;
+      }
       openProfileEditModal();
     });
   }
@@ -919,6 +937,17 @@ function initEventListeners() {
   // 點擊側邊大頭貼可檢視自己的貼文（若無則仍顯示空）
   if (elements.profileAvatarImg) {
     elements.profileAvatarImg.addEventListener('click', (e) => {
+      if (!isLoggedIn()) {
+        const modal = document.getElementById('login-required-modal');
+        if (modal) {
+          modal.classList.remove('closing');
+          modal.classList.add('open');
+          modal.style.display = 'flex';
+          modal.setAttribute('aria-hidden', 'false');
+          modal.setAttribute('aria-modal', 'true');
+        }
+        return;
+      }
       openAuthorModal(currentUser.handle, e.currentTarget);
     });
   }
@@ -1080,7 +1109,10 @@ function renderPosts() {
                       </div>
                     </div>
                   </div>
-                  <span class="post-time">${formatTimeAgo(post.timestamp)}</span>
+                  <div class="post-header-right">
+                    <span class="post-time">${formatTimeAgo(post.timestamp)}</span>
+                    ${isLoggedIn() && currentUser.handle === post.authorHandle ? `<button class="btn-delete-post" title="刪除貼文"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+                  </div>
               </div>
               
               <div class="post-card-body">
@@ -1187,9 +1219,31 @@ function renderPosts() {
     const ava = card.querySelector('.clickable-avatar');
     if (ava) {
       ava.addEventListener('click', (e) => {
-          e.stopPropagation();
-          openAuthorModal(ava.getAttribute('data-handle'), e.currentTarget);
-        });
+        e.stopPropagation();
+        if (!isLoggedIn()) {
+          const modal = document.getElementById('login-required-modal');
+          if (modal) {
+            modal.classList.remove('closing');
+            modal.classList.add('open');
+            modal.style.display = 'flex';
+            modal.setAttribute('aria-hidden', 'false');
+            modal.setAttribute('aria-modal', 'true');
+          }
+          return;
+        }
+        openAuthorModal(ava.getAttribute('data-handle'), e.currentTarget);
+      });
+    }
+
+    // 刪除貼文按鈕（只有本人貼文才有此按鈕）
+    const deleteBtn = card.querySelector('.btn-delete-post');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', () => {
+        posts = posts.filter(p => p.id !== post.id);
+        persistPosts();
+        renderApp();
+        showToast('貼文已刪除');
+      });
     }
 
     elements.postsFeed.appendChild(card);
@@ -1301,7 +1355,7 @@ function handlePublishPost() {
     isLiked: false,
     isBookmarked: false,
     comments: [],
-    tags: mergedTags.length > 0 ? mergedTags : ["新鮮事"]
+    tags: mergedTags
   };
 
   // 插到陣列最前面
@@ -1417,41 +1471,20 @@ function showToast(message) {
   }, 2800);
 }
 
-// ====== 本地圖片上傳功能 ======
-const imageBtn = document.getElementById('btn-trigger-image-popup');
+// ====== 本地圖片上傳功能（file input change 監聽） ======
 const fileInput = document.getElementById('file-upload-input');
-const previewBox = document.getElementById('image-preview-box');
-const previewImg = document.getElementById('image-preview-img');
 
-// 1. 當點擊圖片圖示時，模擬點擊隱藏的檔案上傳欄位
-if (imageBtn && fileInput) {
-  imageBtn.addEventListener('click', (e) => {
-    e.preventDefault(); // 阻止原本跳出 URL 視窗的預設行為
-    e.stopPropagation();
-    fileInput.click();
-  });
-}
-
-// 2. 當使用者選擇好照片後，讀取照片並顯示在預覽視窗
+// 當使用者選擇好照片後，讀取照片並顯示在預覽視窗
 if (fileInput) {
   fileInput.addEventListener('change', function () {
     const file = this.files[0];
-
     if (file) {
       const reader = new FileReader();
-
       reader.addEventListener('load', function () {
-        // 將讀取到的圖片 Base64 編碼塞入原本的預覽圖片標籤
-        if (previewImg && previewBox) {
-          previewImg.src = this.result;
-          previewBox.style.display = 'block'; // 顯示預覽區塊
-
-          // 如果你的專案有給預覽區塊加上 active 或是 show 的 class，也可以在這裡加上
-          previewBox.classList.add('active');
-        }
+        selectedPostImageUrl = this.result;
+        updateImagePreview();
       });
-
-      reader.readAsDataURL(file); // 開始讀取檔案
+      reader.readAsDataURL(file);
     }
   });
 }
@@ -1664,7 +1697,8 @@ function updatePostFormState() {
     elements.postInputText.disabled = disabled;
     elements.postInputText.placeholder = disabled ? '請先登入後發佈動態' : '分享今天的新新鮮事與美好靈感...';
   }
-  if (elements.btnPublishPost) elements.btnPublishPost.disabled = disabled;
+  // 發佈按鈕保持可點擊，由 handlePublishPost() 內的 requireLogin() 彈出請先登入視窗
+  if (elements.btnPublishPost) elements.btnPublishPost.disabled = false;
   if (elements.btnTriggerImagePopup) elements.btnTriggerImagePopup.disabled = disabled;
   if (elements.btnTriggerEmojiPopup) elements.btnTriggerEmojiPopup.disabled = disabled;
 }
@@ -1677,19 +1711,34 @@ function closeProfileEditModal() {
 function renderProfileColorOptions() {
   if (!elements.profileColorOptions) return;
   elements.profileColorOptions.innerHTML = '';
+  const savedColor = localStorage.getItem('aurawall_accent_color');
   PROFILE_COLOR_OPTIONS.sort(() => Math.random() - 0.5).forEach(col => {
     const btn = document.createElement('div');
     btn.className = 'color-swatch';
     btn.style.background = col;
     btn.title = col;
+    if (savedColor === col) btn.classList.add('selected');
     btn.addEventListener('click', () => {
-      // 設定 CSS 變數
+      // 設定全域 CSS 變數
       document.documentElement.style.setProperty('--sidebar-accent', col);
+      // 直接更新 profile-card 的色帶顏色
+      applyAccentColor(col);
+      // 儲存選擇
+      localStorage.setItem('aurawall_accent_color', col);
       document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
       btn.classList.add('selected');
     });
     elements.profileColorOptions.appendChild(btn);
   });
+}
+
+// 套用 accent 顏色到 profile card 色帶
+function applyAccentColor(col) {
+  const profileCard = document.querySelector('.profile-card');
+  if (profileCard) {
+    profileCard.style.setProperty('--card-accent', col);
+  }
+  document.documentElement.style.setProperty('--sidebar-accent', col);
 }
 
 function saveProfileEdits() {
@@ -1834,6 +1883,7 @@ function handleAuthButtonClick() {
     // 執行登出流程
     localStorage.removeItem('aurawall_logged_in_user');
     updateAuthUI();
+    renderPosts();
     showToast("👋 您已成功登出 AuraWall！已回復為訪客身分。");
   } else {
     // 顯示登入彈出視窗
