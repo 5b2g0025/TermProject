@@ -169,7 +169,22 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding-right: 4px;
 }
+
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 2px;
+}
+
 
 .brand-section {
   display: flex;
@@ -1850,6 +1865,9 @@ button[disabled] {
   .sidebar {
     position: static;
     width: 100%;
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
   }
 
   .sidebar-menu {
