@@ -1810,6 +1810,45 @@ function updateAuthUI() {
       localStorage.removeItem('aurawall_accent_color');
       resetAccentColor();
     }
+
+    // 非同步從 Firestore 獲取最新的用戶資料以防資料過期
+    if (currentUser.id && currentUser.provider === 'local') {
+      db.collection('users').doc(currentUser.id).get()
+        .then((doc) => {
+          if (doc.exists) {
+            const freshData = { id: doc.id, ...doc.data() };
+            if (JSON.stringify(currentUser) !== JSON.stringify(freshData)) {
+              currentUser = freshData;
+              localStorage.setItem('aurawall_logged_in_user', JSON.stringify(freshData));
+              if (elements.profileAvatarImg) elements.profileAvatarImg.src = currentUser.avatar;
+              if (elements.profileEditAvatarPreview) elements.profileEditAvatarPreview.src = currentUser.avatar;
+              if (elements.profileDisplayName) {
+                elements.profileDisplayName.innerHTML = `
+                  ${currentUser.username}
+                  <i class="fa-solid fa-circle-check badge-official" title="已驗證用戶"></i>
+                `;
+              }
+              if (elements.profileDisplayHandle) {
+                elements.profileDisplayHandle.textContent = currentUser.handle;
+              }
+              if (elements.postCreatorAvatar) elements.postCreatorAvatar.src = currentUser.avatar;
+              
+              if (currentUser.themeColor) {
+                localStorage.setItem('aurawall_accent_color', currentUser.themeColor);
+                applyAccentColor(currentUser.themeColor);
+              } else {
+                localStorage.removeItem('aurawall_accent_color');
+                resetAccentColor();
+              }
+            }
+          } else {
+            // User was deleted by admin
+            localStorage.removeItem('aurawall_logged_in_user');
+            updateAuthUI();
+          }
+        })
+        .catch((err) => console.error("Error syncing user data on load:", err));
+    }
   } else {
     currentUser = DEFAULT_USER;
     currentUser.following = [];
