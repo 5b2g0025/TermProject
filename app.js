@@ -1,5 +1,22 @@
 // ==========================================
-// 1. MOCK DATA & CONSTANTS (模擬資料與常數)
+// 1. FIREBASE CONFIGURATION & INITIALIZATION (Firebase 初始化設定)
+// ==========================================
+const firebaseConfig = {
+  apiKey: "AIzaSyB78eBwEnT5p0u3Hhqqfv8aoPtq275ncKY",
+  authDomain: "termproject-867ad.firebaseapp.com",
+  projectId: "termproject-867ad",
+  storageBucket: "termproject-867ad.firebasestorage.app",
+  messagingSenderId: "1092040399977",
+  appId: "1:1092040399977:web:3ee21820906b4872c4d6f8",
+  measurementId: "G-KWWXE5K1SR"
+};
+
+// 初始化 Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ==========================================
+// 2. MOCK DATA & CONSTANTS (模擬資料與常數)
 // ==========================================
 
 // 預設發文者身分 (免登入，打開網頁直接以此身分進行互動)
@@ -20,7 +37,7 @@ const PRESET_AVATARS = [
 let selectedRegisterAvatar = PRESET_AVATARS[0];
 
 // 初始預設的動態牆貼文資料（豐富版：多位創作者）
-let posts = [
+const INITIAL_POSTS_DATA = [
   {
     id: "post-1",
     authorName: "極簡美學家",
@@ -391,6 +408,8 @@ let posts = [
   }
 ];
 
+let posts = [];
+
 // 表情符號分類資料
 const EMOJI_CATEGORIES = [
   {
@@ -639,8 +658,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initEventListeners();
   initPresets();
   loadSavedPosts();
+  loadUsersRealtime();
   ensureManyPosts();
-  renderApp();
   updateAuthUI();
 
   if (isDevAdminMode) {
@@ -659,24 +678,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 跨分頁同步：當其他分頁（其他用戶）發佈或刪除貼文時，自動更新
+  // 跨分頁同步：登出/登入狀態跨分頁同步（當其他分頁登出或登入時，更新 UI 與色帶顏色）
   window.addEventListener('storage', (e) => {
-    if (e.key === 'aurawall_posts') {
-      const oldCount = posts.length;
-      loadSavedPosts();
-      renderApp();
-      // 如果有新貼文，顯示提示
-      if (posts.length > oldCount) {
-        showToast(`🆕 有 ${posts.length - oldCount} 則新貼文！`);
-      }
-    }
-    // 用戶清單同步（新用戶註冊時，後台儀表板的用戶數量與名單會自動同步增加）
-    if (e.key === 'aurawall_users' || e.key === 'aurawall_users_sync_trigger') {
-      if (currentMenuTab === 'admin') {
-        renderAdminDashboard();
-      }
-    }
-    // 登出/登入狀態跨分頁同步（當其他分頁登出或登入時，更新 UI 與色帶顏色）
     if (e.key === 'aurawall_logged_in_user') {
       updateAuthUI();
       if (!e.newValue) {
@@ -720,45 +723,84 @@ function initTheme() {
 
 // 如果貼文數不多，複製現有貼文直到至少有 20 筆，讓開啟頁面時能看到很多創作者貼文
 function ensureManyPosts() {
-  const target = 20;
-  let i = 0;
-  while (posts.length < target) {
-    const idx = posts.length + 1;
-    const newPost = {
-      id: `autogen-${Date.now()}-${idx}`,
-      authorName: `社群用戶 ${idx}`,
-      authorHandle: `@autogen_${idx}`,
-      authorAvatar: PRESET_AVATARS[idx % PRESET_AVATARS.length],
-      content: `自動生成貼文 #${idx}：這是一則用於展示動態牆的範例內容。`,
-      image: null,
-      timestamp: new Date(Date.now() - idx * 3600000).toISOString(),
-      likes: Math.floor(Math.random() * 300),
-      isLiked: false,
-      isBookmarked: false,
-      comments: [],
-      tags: []
-    };
-    posts.push(newPost);
-    i++;
-    if (i > 200) break;
-  }
+  // Firestore seeds default posts, this is now a no-op
 }
 
+let postsListener = null;
+let isSeeding = false;
 function loadSavedPosts() {
-  const saved = localStorage.getItem('aurawall_posts');
-  if (!saved) return;
-  try {
-    const parsed = JSON.parse(saved);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      posts = parsed;
+  if (postsListener) return;
+  
+  postsListener = db.collection('posts').orderBy('timestamp', 'desc').onSnapshot((snapshot) => {
+    // If empty and never seeded, seed initial posts from INITIAL_POSTS_DATA
+    if (snapshot.empty && !isSeeding && !localStorage.getItem('aurawall_seeded')) {
+      isSeeding = true;
+      console.log("Firestore posts collection is empty and never seeded. Seeding initial posts...");
+      let completed = 0;
+      INITIAL_POSTS_DATA.forEach((post) => {
+        db.collection('posts').doc(post.id).set(post)
+          .then(() => {
+            completed++;
+            if (completed === INITIAL_POSTS_DATA.length) {
+              isSeeding = false;
+              localStorage.setItem('aurawall_seeded', 'true');
+            }
+          })
+          .catch((err) => {
+            console.error("Error seeding:", err);
+            isSeeding = false;
+          });
+      });
+      return;
     }
-  } catch (e) {
-    console.warn('載入本地貼文資料失敗', e);
-  }
+    
+    const fetchedPosts = [];
+    let hasNewPosts = false;
+    snapshot.forEach((doc) => {
+      fetchedPosts.push({ id: doc.id, ...doc.data() });
+    });
+    
+    // Check if new posts were added (for toast notification)
+    if (posts.length > 0 && fetchedPosts.length > posts.length) {
+      hasNewPosts = true;
+    }
+    
+    posts = fetchedPosts;
+    renderApp();
+    
+    if (hasNewPosts) {
+      showToast(`🆕 有新貼文發佈！`);
+    }
+    
+    if (currentMenuTab === 'admin') {
+      renderAdminDashboard();
+    }
+  }, (err) => {
+    console.error("Error loading posts from Firestore:", err);
+  });
 }
 
 function persistPosts() {
-  localStorage.setItem('aurawall_posts', JSON.stringify(posts));
+  // Firestore handles persistence, this is now a no-op
+}
+
+let allUsers = [];
+let usersListener = null;
+function loadUsersRealtime() {
+  if (usersListener) return;
+  usersListener = db.collection('users').onSnapshot((snapshot) => {
+    const fetchedUsers = [];
+    snapshot.forEach((doc) => {
+      fetchedUsers.push({ id: doc.id, ...doc.data() });
+    });
+    allUsers = fetchedUsers;
+    
+    if (currentMenuTab === 'admin') {
+      renderAdminDashboard();
+    }
+  }, (err) => {
+    console.error("Error listening to users from Firestore:", err);
+  });
 }
 
 // 預載表情符號（含分類）
@@ -1399,21 +1441,27 @@ function renderPosts() {
 
     likeButton.addEventListener('click', () => {
       if (!requireLogin()) return;
-      post.isLiked = !post.isLiked;
-      post.likes += post.isLiked ? 1 : -1;
-      persistPosts();
-      renderPosts();
-      updateStatsCounter();
+      const newIsLiked = !post.isLiked;
+      const newLikes = post.likes + (newIsLiked ? 1 : -1);
+      db.collection('posts').doc(post.id).update({
+        isLiked: newIsLiked,
+        likes: newLikes
+      }).catch(err => {
+        console.error("Error updating like:", err);
+      });
     });
 
     // 珍藏動作
     bookmarkButton.addEventListener('click', () => {
       if (!requireLogin()) return;
-      post.isBookmarked = !post.isBookmarked;
-      showToast(post.isBookmarked ? "貼文已成功加入收藏清單" : "已從收藏清單中移除");
-      persistPosts();
-      renderPosts();
-      updateStatsCounter();
+      const newIsBookmarked = !post.isBookmarked;
+      db.collection('posts').doc(post.id).update({
+        isBookmarked: newIsBookmarked
+      }).then(() => {
+        showToast(newIsBookmarked ? "貼文已成功加入收藏清單" : "已從收藏清單中移除");
+      }).catch(err => {
+        console.error("Error updating bookmark:", err);
+      });
     });
 
     // 發表新留言回覆邏輯
@@ -1421,14 +1469,18 @@ function renderPosts() {
       if (!requireLogin()) return;
       const commentText = commentInput.value.trim();
       if (commentText) {
-        post.comments.push({
+        const updatedComments = [...(post.comments || []), {
           id: 'comment-' + Date.now(),
           authorName: currentUser.username,
           content: commentText
+        }];
+        db.collection('posts').doc(post.id).update({
+          comments: updatedComments
+        }).then(() => {
+          commentInput.value = '';
+        }).catch(err => {
+          console.error("Error adding comment:", err);
         });
-        persistPosts();
-        commentInput.value = '';
-        renderPosts();
       }
     };
 
@@ -1587,8 +1639,9 @@ function handlePublishPost() {
   // 合併打字輸入與內文抽出的標籤
   const mergedTags = Array.from(new Set([...currentPostTags, ...textTags]));
 
+  const newPostId = 'post-' + Date.now();
   const newPostObj = {
-    id: 'post-' + Date.now(),
+    id: newPostId,
     authorName: currentUser.username,
     authorHandle: currentUser.handle,
     authorAvatar: currentUser.avatar,
@@ -1602,20 +1655,20 @@ function handlePublishPost() {
     tags: mergedTags
   };
 
-  // 插到陣列最前面
-  posts.unshift(newPostObj);
-  persistPosts();
-
-  // 清空輸入框與欄位狀態
-  elements.postInputText.value = '';
-  selectedPostImageUrl = null;
-  currentPostTags = [];
-  updateImagePreview();
-  renderPostFormTags();
-
-  // 重新刷新介面
-  renderApp();
-  showToast("✨ 動態發表成功！");
+  db.collection('posts').doc(newPostId).set(newPostObj)
+    .then(() => {
+      // 清空輸入框與欄位狀態
+      elements.postInputText.value = '';
+      selectedPostImageUrl = null;
+      currentPostTags = [];
+      updateImagePreview();
+      renderPostFormTags();
+      showToast("✨ 動態發表成功！");
+    })
+    .catch((err) => {
+      console.error("Error publishing post to Firestore:", err);
+      showToast("❌ 發佈動態失敗");
+    });
 }
 
 // 更新圖片預覽框顯示狀態
@@ -1868,11 +1921,9 @@ function requireLogin() {
 function persistCurrentUser() {
   if (!isLoggedIn()) return;
   localStorage.setItem('aurawall_logged_in_user', JSON.stringify(currentUser));
-  const users = JSON.parse(localStorage.getItem('aurawall_users') || '[]');
-  const idx = users.findIndex(u => u.email && u.email === currentUser.email);
-  if (idx !== -1) {
-    users[idx] = currentUser;
-    localStorage.setItem('aurawall_users', JSON.stringify(users));
+  if (currentUser.id) {
+    db.collection('users').doc(currentUser.id).update(currentUser)
+      .catch(err => console.error("Error updating user in Firestore:", err));
   }
 }
 
@@ -1995,15 +2046,7 @@ function renderProfileColorOptions() {
       const loggedInUser = localStorage.getItem('aurawall_logged_in_user');
       if (loggedInUser) {
         currentUser.themeColor = col;
-        localStorage.setItem('aurawall_logged_in_user', JSON.stringify(currentUser));
-        
-        // 更新註冊使用者列表 (aurawall_users) 中的該使用者設定，以便下次登入時還原
-        const users = JSON.parse(localStorage.getItem('aurawall_users') || '[]');
-        const userIdx = users.findIndex(u => u.email === currentUser.email);
-        if (userIdx !== -1) {
-          users[userIdx].themeColor = col;
-          localStorage.setItem('aurawall_users', JSON.stringify(users));
-        }
+        persistCurrentUser();
       }
 
       document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
@@ -2046,20 +2089,7 @@ function saveProfileEdits() {
     currentUser.themeColor = savedColor;
   }
 
-  localStorage.setItem('aurawall_logged_in_user', JSON.stringify(currentUser));
-
-  // 將變更同步回註冊使用者列表 (aurawall_users)，以便下次登入時讀取
-  const users = JSON.parse(localStorage.getItem('aurawall_users') || '[]');
-  const userIdx = users.findIndex(u => u.email === currentUser.email);
-  if (userIdx !== -1) {
-    users[userIdx].username = currentUser.username;
-    users[userIdx].handle = currentUser.handle;
-    users[userIdx].avatar = currentUser.avatar;
-    if (savedColor) {
-      users[userIdx].themeColor = savedColor;
-    }
-    localStorage.setItem('aurawall_users', JSON.stringify(users));
-  }
+  persistCurrentUser();
 
   updateAuthUI();
   closeProfileEditModal();
@@ -2346,7 +2376,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // 處理 Email 登入提交
-function handleLogin(e) {
+async function handleLogin(e) {
   e.preventDefault();
   const email = elements.loginEmail.value.trim();
   const password = elements.loginPassword.value.trim();
@@ -2354,6 +2384,7 @@ function handleLogin(e) {
   // 1. 驗證內建測試帳號
   if (email === 'admin@aurawall.com' && password === '123456') {
     const adminUser = {
+      id: "admin-id",
       username: "管理員 Admin",
       handle: "@aurawall_admin",
       avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
@@ -2368,24 +2399,38 @@ function handleLogin(e) {
     return;
   }
 
-  // 2. 驗證本地註冊之用戶陣列
-  const users = JSON.parse(localStorage.getItem('aurawall_users') || '[]');
-  const matchedUser = users.find(u => u.email === email && u.password === password);
+  // 2. 驗證 Firestore users 集合的帳密
+  try {
+    const userSnapshot = await db.collection('users').where('email', '==', email).get();
+    if (userSnapshot.empty) {
+      showToast("❌ 帳號或密碼輸入錯誤，請再試一次");
+      return;
+    }
+    let matchedUser = null;
+    userSnapshot.forEach((doc) => {
+      const u = doc.data();
+      if (u.password === password) {
+        matchedUser = { id: doc.id, ...u };
+      }
+    });
 
-  if (matchedUser) {
-    localStorage.setItem('aurawall_logged_in_user', JSON.stringify(matchedUser));
-    updateAuthUI();
-    renderApp();
-    showToast(`👋 歡迎回來，${matchedUser.username}！`);
-    elements.loginForm.reset();
-    closeModal(elements.authModal);
-  } else {
-    showToast("❌ 帳號或密碼輸入錯誤，請再試一次");
+    if (matchedUser) {
+      localStorage.setItem('aurawall_logged_in_user', JSON.stringify(matchedUser));
+      updateAuthUI();
+      showToast(`👋 歡迎回來，${matchedUser.username}！`);
+      elements.loginForm.reset();
+      closeModal(elements.authModal);
+    } else {
+      showToast("❌ 帳號或密碼輸入錯誤，請再試一次");
+    }
+  } catch (err) {
+    console.error("Login error:", err);
+    showToast("❌ 登入發生錯誤，請稍後重試");
   }
 }
 
 // 處理 Email 註冊提交
-function handleRegister(e) {
+async function handleRegister(e) {
   e.preventDefault();
   const username = elements.registerUsername.value.trim();
   let handle = elements.registerHandle.value.trim();
@@ -2395,54 +2440,85 @@ function handleRegister(e) {
   const email = elements.registerEmail.value.trim();
   const password = elements.registerPassword.value.trim();
 
-  // 讀取現有用戶列表 
-  const users = JSON.parse(localStorage.getItem('aurawall_users') || '[]');
-
   if (elements.registerHandleError) elements.registerHandleError.textContent = '';
   if (elements.registerEmailError) elements.registerEmailError.textContent = '';
 
-  // 檢查帳號 Handle 是否已被使用
-  if (users.some(u => u.handle === handle)) {
-    if (elements.registerHandleError) elements.registerHandleError.textContent = '此帳號已用過，請選擇其他帳號。';
-    return;
+  try {
+    // 檢查帳號 Handle 是否已被使用
+    const handleSnapshot = await db.collection('users').where('handle', '==', handle).get();
+    if (!handleSnapshot.empty) {
+      if (elements.registerHandleError) elements.registerHandleError.textContent = '此帳號已用過，請選擇其他帳號。';
+      return;
+    }
+
+    // 檢查 Email 是否已註冊
+    const emailSnapshot = await db.collection('users').where('email', '==', email).get();
+    if (!emailSnapshot.empty) {
+      if (elements.registerEmailError) elements.registerEmailError.textContent = '此電子信箱已被使用，請改用其他信箱。';
+      return;
+    }
+
+    const newUser = {
+      username: username,
+      handle: handle,
+      email: email,
+      password: password,
+      avatar: getSelectedRegisterAvatar(),
+      provider: 'local',
+      themeColor: ''
+    };
+
+    const docRef = await db.collection('users').add(newUser);
+    const registeredUser = { id: docRef.id, ...newUser };
+
+    // 註冊成功後自動登入
+    localStorage.setItem('aurawall_logged_in_user', JSON.stringify(registeredUser));
+    updateAuthUI();
+    showToast("🎉 註冊成功！已為您自動登入。");
+
+    // 重置表單並關閉彈出視窗
+    elements.registerForm.reset();
+    closeModal(elements.authModal);
+  } catch (err) {
+    console.error("Registration error:", err);
+    showToast("❌ 註冊失敗，請稍後重試");
   }
-
-  // 檢查 Email 是否已註冊
-  if (users.some(u => u.email === email)) {
-    if (elements.registerEmailError) elements.registerEmailError.textContent = '此電子信箱已被使用，請改用其他信箱。';
-    return;
-  }
-
-  const newUser = {
-    username: username,
-    handle: handle,
-    email: email,
-    password: password,
-    avatar: getSelectedRegisterAvatar(),
-    provider: 'local'
-  };
-
-  users.push(newUser);
-  localStorage.setItem('aurawall_users', JSON.stringify(users));
-
-  // 註冊成功後自動登入
-  localStorage.setItem('aurawall_logged_in_user', JSON.stringify(newUser));
-  updateAuthUI();
-  renderApp();
-  showToast("🎉 註冊成功！已為您自動登入。");
-
-  // 重置表單並關閉彈出視窗
-  elements.registerForm.reset();
-  closeModal(elements.authModal);
 }
 
 // 處理第三方社群帳戶登入成功回呼 (Google, Facebook 等彈出視窗會呼叫此函式)
-window.handleSocialLogin = function (socialUser) {
-  localStorage.setItem('aurawall_logged_in_user', JSON.stringify(socialUser));
-  updateAuthUI();
-  renderApp();
-  showToast(`✨ 已成功使用 ${socialUser.provider === 'google' ? 'Google' : 'Facebook'} 帳戶登入！`);
-  if (elements.authModal) closeModal(elements.authModal);
+window.handleSocialLogin = async function (socialUser) {
+  try {
+    const userSnapshot = await db.collection('users').where('email', '==', socialUser.email).get();
+    let loggedUser;
+    if (userSnapshot.empty) {
+      const newUser = {
+        username: socialUser.username,
+        handle: socialUser.handle,
+        email: socialUser.email,
+        avatar: socialUser.avatar,
+        provider: socialUser.provider,
+        themeColor: ''
+      };
+      const docRef = await db.collection('users').add(newUser);
+      loggedUser = { id: docRef.id, ...newUser };
+    } else {
+      let docId = '';
+      let userData = {};
+      userSnapshot.forEach((doc) => {
+        docId = doc.id;
+        userData = doc.data();
+      });
+      loggedUser = { id: docId, ...userData };
+    }
+
+    localStorage.setItem('aurawall_logged_in_user', JSON.stringify(loggedUser));
+    updateAuthUI();
+    showToast(`✨ 已成功使用 ${socialUser.provider === 'google' ? 'Google' : 'Facebook'} 帳戶登入！`);
+    if (elements.authModal) closeModal(elements.authModal);
+  } catch (err) {
+    console.error("Social login error:", err);
+    showToast("❌ 登入失敗");
+  }
 };
 
 // 額外設定 window message 接收機制以支援備用通訊方案
@@ -2458,7 +2534,7 @@ window.addEventListener('message', (event) => {
 let currentAdminSection = 'users'; // 'users' | 'posts' | 'maintenance'
 
 function renderAdminDashboard() {
-  const users = JSON.parse(localStorage.getItem('aurawall_users') || '[]');
+  const users = allUsers;
   const totalPosts = posts.length;
   const totalLikes = posts.reduce((sum, p) => sum + (p.likes || 0), 0);
   
@@ -2548,7 +2624,7 @@ function renderAdminDashboard() {
 }
 
 function renderAdminUsers(container) {
-  const users = JSON.parse(localStorage.getItem('aurawall_users') || '[]');
+  const users = allUsers;
   
   let html = `
     <h3 style="font-size: 18px; font-weight:600; margin-bottom: 4px; color: var(--text-main);"><i class="fa-solid fa-user-shield"></i> 註冊用戶名單</h3>
@@ -2618,15 +2694,19 @@ function renderAdminUsers(container) {
 }
 
 function deleteAdminUser(email) {
-  let users = JSON.parse(localStorage.getItem('aurawall_users') || '[]');
-  users = users.filter(u => u.email !== email);
-  localStorage.setItem('aurawall_users', JSON.stringify(users));
-  
-  // 透過 Broadcast/storage 同步到其他分頁
-  localStorage.setItem('aurawall_users_sync_trigger', Date.now());
-  
-  showToast(`已成功刪除用戶: ${email}`);
-  renderAdminDashboard();
+  const user = allUsers.find(u => u.email === email);
+  if (user && user.id) {
+    db.collection('users').doc(user.id).delete()
+      .then(() => {
+        showToast(`已成功刪除用戶: ${email}`);
+      })
+      .catch((err) => {
+        console.error("Error deleting user:", err);
+        showToast("❌ 刪除用戶失敗");
+      });
+  } else {
+    showToast("❌ 找不到此用戶");
+  }
 }
 
 function renderAdminPosts(container) {
@@ -2715,11 +2795,14 @@ function renderAdminPosts(container) {
 }
 
 function deleteAdminPost(postId) {
-  posts = posts.filter(p => p.id !== postId);
-  persistPosts();
-  
-  showToast(`已下架並刪除貼文`);
-  renderAdminDashboard();
+  db.collection('posts').doc(postId).delete()
+    .then(() => {
+      showToast(`已下架並刪除貼文`);
+    })
+    .catch((err) => {
+      console.error("Error deleting post:", err);
+      showToast("❌ 刪除貼文失敗");
+    });
 }
 
 function renderAdminMaintenance(container) {
@@ -2757,16 +2840,33 @@ function renderAdminMaintenance(container) {
   container.innerHTML = html;
 
   // 綁定按鈕事件
-  document.getElementById('btn-admin-reset').addEventListener('click', () => {
+  document.getElementById('btn-admin-reset').addEventListener('click', async () => {
     if (confirm('確定要將系統重置為出廠預設資料嗎？這將刪除所有自行新增的貼文與註冊用戶。')) {
-      localStorage.removeItem('aurawall_posts');
-      localStorage.removeItem('aurawall_users');
-      posts = [];
-      loadSavedPosts();
-      ensureManyPosts();
-      persistPosts();
-      showToast('系統已重置為出廠預設資料');
-      renderAdminDashboard();
+      try {
+        showToast("正在重置系統資料...");
+        localStorage.removeItem('aurawall_seeded');
+        
+        // Delete all posts
+        const postsSnapshot = await db.collection('posts').get();
+        const postDeletePromises = [];
+        postsSnapshot.forEach(doc => {
+          postDeletePromises.push(doc.ref.delete());
+        });
+        await Promise.all(postDeletePromises);
+        
+        // Delete all users
+        const usersSnapshot = await db.collection('users').get();
+        const userDeletePromises = [];
+        usersSnapshot.forEach(doc => {
+          userDeletePromises.push(doc.ref.delete());
+        });
+        await Promise.all(userDeletePromises);
+        
+        showToast('系統已重置為出廠預設資料');
+      } catch (err) {
+        console.error("Reset system error:", err);
+        showToast("❌ 重置系統失敗");
+      }
     }
   });
 
@@ -2778,11 +2878,13 @@ function renderAdminMaintenance(container) {
       { name: "健身教練 Leon", handle: "@leon_workout", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100" }
     ];
     
+    const batch = db.batch();
     for (let i = 1; i <= 10; i++) {
       const u = testUsers[Math.floor(Math.random() * testUsers.length)];
       const idx = originalLength + i;
+      const newPostId = `test-gen-${Date.now()}-${idx}`;
       const newPost = {
-        id: `test-gen-${Date.now()}-${idx}`,
+        id: newPostId,
         authorName: u.name,
         authorHandle: u.handle,
         authorAvatar: u.avatar,
@@ -2795,19 +2897,34 @@ function renderAdminMaintenance(container) {
         comments: [],
         tags: ["Testing", "Admin"]
       };
-      posts.unshift(newPost);
+      const docRef = db.collection('posts').doc(newPostId);
+      batch.set(docRef, newPost);
     }
-    persistPosts();
-    showToast('已成功生成 10 則測試貼文！');
-    renderAdminDashboard();
+    
+    batch.commit()
+      .then(() => {
+        showToast('已成功生成 10 則測試貼文！');
+      })
+      .catch((err) => {
+        console.error("Error generating posts:", err);
+        showToast("❌ 生成貼文失敗");
+      });
   });
 
-  document.getElementById('btn-admin-clear-all').addEventListener('click', () => {
+  document.getElementById('btn-admin-clear-all').addEventListener('click', async () => {
     if (confirm('確定要清空平台上的所有貼文嗎？')) {
-      posts = [];
-      persistPosts();
-      showToast('已清空平台上的所有貼文');
-      renderAdminDashboard();
+      try {
+        const postsSnapshot = await db.collection('posts').get();
+        const batch = db.batch();
+        postsSnapshot.forEach(doc => {
+          batch.delete(doc.ref);
+        });
+        await batch.commit();
+        showToast('已清空平台上的所有貼文');
+      } catch (err) {
+        console.error("Error clearing posts:", err);
+        showToast("❌ 清空貼文失敗");
+      }
     }
   });
 }
