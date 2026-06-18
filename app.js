@@ -670,9 +670,11 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast(`🆕 有 ${posts.length - oldCount} 則新貼文！`);
       }
     }
-    // 用戶清單同步（新用戶註冊時其他分頁也能看到）
-    if (e.key === 'aurawall_users') {
-      // 更新本機快取，不需重新渲染
+    // 用戶清單同步（新用戶註冊時，後台儀表板的用戶數量與名單會自動同步增加）
+    if (e.key === 'aurawall_users' || e.key === 'aurawall_users_sync_trigger') {
+      if (currentMenuTab === 'admin') {
+        renderAdminDashboard();
+      }
     }
     // 登出/登入狀態跨分頁同步（當其他分頁登出或登入時，更新 UI 與色帶顏色）
     if (e.key === 'aurawall_logged_in_user') {
