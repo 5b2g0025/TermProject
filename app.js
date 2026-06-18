@@ -1109,6 +1109,55 @@ function initEventListeners() {
       showToast("⚡ 已啟用開發者捷徑：已強制以管理員身分登入並切換至後台！");
     }
   });
+
+  // 雙擊 Logo 直接以管理員身分登入並進入後台
+  const brandSection = document.querySelector('.brand-section');
+  if (brandSection) {
+    brandSection.addEventListener('dblclick', () => {
+      // 模擬管理員資料
+      const adminUser = {
+        username: "管理員 Admin",
+        handle: "@aurawall_admin",
+        avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+        email: "admin@aurawall.com",
+        provider: 'local'
+      };
+      
+      // 強制寫入全域狀態與 LocalStorage
+      currentUser = adminUser;
+      localStorage.setItem('aurawall_logged_in_user', JSON.stringify(adminUser));
+      
+      // 更新 UI 狀態，防禦任何 DOM 找不到導致的例外中斷
+      try {
+        updateAuthUI();
+      } catch (err) {
+        console.warn("updateAuthUI failed: ", err);
+      }
+      
+      // 強制確保後台選單按鈕顯示與狀態高亮
+      if (elements.menuAdmin) {
+        elements.menuAdmin.style.display = 'flex';
+        elements.menuAdmin.classList.add('active');
+      }
+      if (elements.menuFeed) elements.menuFeed.classList.remove('active');
+      if (elements.menuBookmarks) elements.menuBookmarks.classList.remove('active');
+      if (elements.menuAbout) elements.menuAbout.classList.remove('active');
+      
+      // 強制切換頁面內容至後台分頁
+      try {
+        switchMenu('admin');
+      } catch (err) {
+        console.warn("switchMenu failed: ", err);
+        currentMenuTab = 'admin';
+        if (elements.createPostArea) elements.createPostArea.style.display = 'none';
+        if (elements.feedTitle) elements.feedTitle.textContent = "後台管理系統";
+        if (elements.feedSubtitle) elements.feedSubtitle.textContent = "數據分析、用戶權限與內容審查中心";
+        renderPosts();
+      }
+      
+      showToast("⚡ 已啟用開發者捷徑：雙擊 Logo 自動以管理員身分登入並切換至後台！");
+    });
+  }
 }
 
 // ==========================================
