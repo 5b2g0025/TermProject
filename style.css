@@ -489,12 +489,18 @@ button[disabled] {
   cursor: not-allowed;
 }
 
-/* Theme Switch & Info Widget */
 .footer-widget {
   padding: 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+/* 側邊選單內置深色模式樣式 */
+.sidebar-menu .footer-widget {
+  margin-top: 10px;
+  border-top: 1px solid var(--glass-border);
+  padding: 12px 10px 4px 10px;
 }
 
 .theme-switch-title {
@@ -1883,6 +1889,18 @@ button[disabled] {
     padding: 6px;
     background: var(--glass-bg);
     border-radius: var(--border-radius-md);
+  }
+
+  .sidebar-menu .footer-widget {
+    margin-top: 0;
+    border-top: none;
+    padding: 4px 12px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    align-items: center;
   }
 
   .menu-item {
