@@ -1037,7 +1037,7 @@ function initEventListeners() {
     }
   });
 
-  // 開發環境快捷鍵 (Ctrl + Shift + B) 直接登入管理員並切換至後台
+  // 開發環境快捷鍵 (Ctrl + Shift + B 或 Ctrl + Shift + Y) 直接登入管理員並切換至後台
   document.addEventListener('keydown', (e) => {
     const hostname = window.location.hostname;
     const protocol = window.location.protocol;
@@ -1053,7 +1053,16 @@ function initEventListeners() {
       /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
       /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname);
     
-    if (isDevelopment && e.ctrlKey && e.shiftKey && (e.key === 'B' || e.key === 'b')) {
+    // 支援 B 鍵或 Y 鍵 (解決 B 鍵可能與瀏覽器書籤列衝突的問題)
+    // 支援 e.code 與 e.keyCode 解決中文輸入法下 e.key 變成 Unidentified 的問題
+    const isKeyB = (e.key === 'B' || e.key === 'b' || e.code === 'KeyB' || e.keyCode === 66);
+    const isKeyY = (e.key === 'Y' || e.key === 'y' || e.code === 'KeyY' || e.keyCode === 89);
+    
+    const triggerKey = isKeyB || isKeyY;
+    const triggerModifiers = e.ctrlKey && e.shiftKey;
+    const bypassEnvCheck = e.altKey; // 加按 Alt 鍵 (Ctrl + Shift + Alt + Y) 即可強制繞過環境檢查
+    
+    if (triggerModifiers && triggerKey && (isDevelopment || bypassEnvCheck)) {
       e.preventDefault();
       
       // 模擬管理員資料
