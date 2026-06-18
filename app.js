@@ -656,6 +656,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initTheme();
   initEventListeners();
+  initChatWidgetEvents();
   initPresets();
   loadSavedPosts();
   loadUsersRealtime();
@@ -1416,6 +1417,10 @@ function renderPosts() {
                       <i class="fa-regular fa-comment"></i>
                       <span class="count">${post.comments.length}</span>
                   </button>
+                  <button class="action-btn btn-dm">
+                      <i class="fa-regular fa-paper-plane"></i>
+                      <span>私訊</span>
+                  </button>
                   <button class="action-btn btn-bookmark ${post.isBookmarked ? 'active' : ''}" style="margin-left: auto;">
                       <i class="${post.isBookmarked ? 'fa-solid' : 'fa-regular'} fa-bookmark"></i>
                   </button>
@@ -1484,11 +1489,32 @@ function renderPosts() {
       }
     };
 
+    // 私訊動作
+    const dmButton = card.querySelector('.btn-dm');
+    if (dmButton) {
+      if (!isUserLoggedIn) {
+        dmButton.classList.add('locked');
+      }
+      dmButton.addEventListener('click', () => {
+        if (!requireLogin()) return;
+        if (post.authorHandle === currentUser.handle) {
+          showToast("💡 您不能私訊給自己喔！");
+          return;
+        }
+        openChatWith({
+          handle: post.authorHandle,
+          username: post.authorName,
+          avatar: avatarSrc
+        });
+      });
+    }
+
     // 留言區可互動狀態
     if (!isUserLoggedIn) {
       likeButton.classList.add('locked');
       bookmarkButton.classList.add('locked');
       commentTrigger.classList.add('locked');
+      if (dmButton) dmButton.classList.add('locked');
       commentInput.disabled = true;
       commentInput.placeholder = '請先登入後留言';
       commentSendButton.disabled = true;
@@ -1888,6 +1914,12 @@ function updateAuthUI() {
         switchMenu('feed');
       }
     }
+  }
+
+  // 控制私訊聊天室顯示狀態
+  const chatWidget = document.getElementById('chat-widget');
+  if (chatWidget) {
+    chatWidget.style.display = loggedInUser ? 'block' : 'none';
   }
 
   // 重新渲染與刷新計數器
@@ -2980,4 +3012,135 @@ function escapeHTML(str) {
       default: return m;
     }
   });
+}
+
+// ==========================================
+// 10. PRIVATE MESSAGES LOGIC (私訊功能模組)
+// ==========================================
+let currentChatTarget = null;
+let chatListener = null;
+
+function initChatWidgetEvents() {
+  const triggerBtn = document.getElementById('chat-trigger-btn');
+  const chatPanel = document.getElementById('chat-panel');
+  const closeBtn = document.getElementById('btn-close-chat');
+  const inputForm = document.getElementById('chat-input-form');
+  const inputField = document.getElementById('chat-input-text-field');
+  
+  if (triggerBtn && chatPanel) {
+    triggerBtn.addEventListener('click', () => {
+      if (!requireLogin()) return;
+      if (!currentChatTarget) {
+        showToast("💡 請點擊動態牆貼文下方的「私訊」按鈕來選擇對話對象！");
+        return;
+      }
+      triggerBtn.style.display = 'none';
+      chatPanel.style.display = 'flex';
+      startChatListener();
+    });
+  }
+  
+  if (closeBtn && triggerBtn && chatPanel) {
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      chatPanel.style.display = 'none';
+      triggerBtn.style.display = 'flex';
+    });
+  }
+  
+  if (inputForm && inputField) {
+    inputForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = inputField.value.trim();
+      if (text) {
+        sendChatMessage(text);
+      }
+    });
+  }
+}
+
+function openChatWith(targetUser) {
+  currentChatTarget = targetUser;
+  
+  const triggerBtn = document.getElementById('chat-trigger-btn');
+  const chatPanel = document.getElementById('chat-panel');
+  const avatarEl = document.getElementById('chat-target-avatar');
+  const nameEl = document.getElementById('chat-target-name');
+  const handleEl = document.getElementById('chat-target-handle');
+  
+  if (avatarEl) avatarEl.src = targetUser.avatar;
+  if (nameEl) nameEl.textContent = targetUser.username;
+  if (handleEl) handleEl.textContent = targetUser.handle;
+  
+  if (triggerBtn && chatPanel) {
+    triggerBtn.style.display = 'none';
+    chatPanel.style.display = 'flex';
+  }
+  
+  startChatListener();
+}
+
+function startChatListener() {
+  if (chatListener) chatListener(); // 註銷舊有的 Listener
+  
+  const messagesBody = document.getElementById('chat-messages-body');
+  if (!messagesBody || !currentChatTarget || !currentUser) return;
+
+  chatListener = db.collection('messages')
+    .orderBy('timestamp', 'asc')
+    .onSnapshot((snapshot) => {
+      messagesBody.innerHTML = '';
+      
+      let hasMessages = false;
+      snapshot.forEach((doc) => {
+        const msg = doc.data();
+        const isSentByMe = msg.senderHandle === currentUser.handle && msg.receiverHandle === currentChatTarget.handle;
+        const isReceivedByMe = msg.senderHandle === currentChatTarget.handle && msg.receiverHandle === currentUser.handle;
+        
+        if (isSentByMe || isReceivedByMe) {
+          hasMessages = true;
+          const bubble = document.createElement('div');
+          bubble.className = `chat-bubble ${isSentByMe ? 'sent' : 'received'}`;
+          bubble.textContent = msg.text;
+          messagesBody.appendChild(bubble);
+        }
+      });
+      
+      if (!hasMessages) {
+        messagesBody.innerHTML = `
+          <div class="chat-empty-state">
+            <i class="fa-regular fa-paper-plane"></i>
+            <p>與 <strong>${currentChatTarget.username}</strong> 開始對話...<br>傳送第一則溫暖訊息吧 ✨</p>
+          </div>
+        `;
+      }
+      
+      // 自動捲動到最底部
+      messagesBody.scrollTop = messagesBody.scrollHeight;
+    }, (err) => {
+      console.error("Error loading chat messages:", err);
+    });
+}
+
+function sendChatMessage(text) {
+  if (!currentChatTarget || !text.trim() || !currentUser) return;
+  
+  const msgObj = {
+    senderHandle: currentUser.handle,
+    senderName: currentUser.username,
+    receiverHandle: currentChatTarget.handle,
+    receiverName: currentChatTarget.username,
+    text: text.trim(),
+    timestamp: new Date().toISOString()
+  };
+  
+  db.collection('messages').add(msgObj)
+    .then(() => {
+      const inputField = document.getElementById('chat-input-text-field');
+      if (inputField) inputField.value = '';
+    })
+    .catch((err) => {
+      console.error("Error sending message:", err);
+      showToast("❌ 傳送訊息失敗，請重試");
+    });
 }
