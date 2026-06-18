@@ -795,7 +795,10 @@ function loadUsersRealtime() {
       fetchedUsers.push({ id: doc.id, ...doc.data() });
     });
     allUsers = fetchedUsers;
-    
+
+    // 即時更新左側粉絲數（有人追蹤我時即時反映）
+    updateStatsCounter();
+
     if (currentMenuTab === 'admin') {
       renderAdminDashboard();
     } else if (currentMenuTab === 'chat') {
@@ -1759,6 +1762,16 @@ function renderPostFormTags() {
   });
 }
 
+// 計算有多少人追蹤我（從 allUsers 中查詢）
+function getMyFollowerCount() {
+  if (!isLoggedIn() || !currentUser.handle) return 0;
+  return allUsers.filter(u =>
+    u.handle !== currentUser.handle &&
+    Array.isArray(u.following) &&
+    u.following.includes(currentUser.handle)
+  ).length;
+}
+
 // 更新看版與左側個人統計面板數字
 function updateStatsCounter() {
   const totalLikes = posts.reduce((sum, p) => sum + p.likes, 0);
@@ -1769,11 +1782,12 @@ function updateStatsCounter() {
     if (elements.profileBookmarksCount) elements.profileBookmarksCount.textContent = '0';
   } else {
     const myPostsCount = posts.filter(p => p.authorHandle === currentUser.handle).length;
-    const followCount = Array.isArray(currentUser.following) ? currentUser.following.length : 0;
+    const followCount  = Array.isArray(currentUser.following) ? currentUser.following.length : 0;
+    const followerCount = getMyFollowerCount();
 
-    if (elements.profilePostsCount) elements.profilePostsCount.textContent = myPostsCount;
-    if (elements.profileLikesCount) elements.profileLikesCount.textContent = totalLikes;
-    if (elements.profileBookmarksCount) elements.profileBookmarksCount.textContent = followCount;
+    if (elements.profilePostsCount)    elements.profilePostsCount.textContent    = myPostsCount;
+    if (elements.profileLikesCount)    elements.profileLikesCount.textContent    = followerCount;  // 粉絲數
+    if (elements.profileBookmarksCount) elements.profileBookmarksCount.textContent = followCount;   // 追蹤數
   }
 
   if (elements.totalPlatformPosts) elements.totalPlatformPosts.textContent = posts.length;
@@ -3119,8 +3133,8 @@ function renderChatMainUsersList() {
     const item = document.createElement('div');
     const isActive = currentChatMainTarget && currentChatMainTarget.handle === user.handle;
     item.className = `chat-user-item ${isActive ? 'active' : ''} ${isLocked ? 'locked-item' : ''}`;
-    item.style.opacity = isLocked ? '0.45' : '1';
-    item.style.cursor  = isLocked ? 'not-allowed' : 'pointer';
+    item.style.opacity = isLocked ? '0.7' : '1';
+    item.style.cursor  = 'pointer';
     
     const avatarSrc = user.avatar || getFallbackAvatar(user.handle);
     
@@ -3134,10 +3148,6 @@ function renderChatMainUsersList() {
     `;
     
     item.addEventListener('click', () => {
-      if (isLocked) {
-        showToast(`🔒 你和 ${user.username} 至少需要一方追蹤對方才能私訊`);
-        return;
-      }
       selectChatMainTarget(user);
     });
     
@@ -3176,6 +3186,7 @@ function renderChatMainRoom() {
   
   const avatarSrc = currentChatMainTarget.avatar || getFallbackAvatar(currentChatMainTarget.handle);
   const alreadyFollowing = isFollowing(currentChatMainTarget.handle);
+  const isDMAllowed = canDMUser(currentChatMainTarget.handle);
 
   roomPaneEl.innerHTML = `
     <div class="chat-room-header">
@@ -3198,8 +3209,8 @@ function renderChatMainRoom() {
     
     <div class="chat-room-input-container">
       <form class="chat-room-input-form" id="chat-main-input-form">
-        <input type="text" placeholder="輸入訊息..." class="chat-room-input" id="chat-main-input-field" required autocomplete="off">
-        <button type="submit" class="chat-room-send-btn" title="發送訊息">
+        <input type="text" placeholder="${isDMAllowed ? '輸入訊息...' : '🔒 雙方至少需要有一方追蹤對方才能傳送訊息'}" class="chat-room-input" id="chat-main-input-field" required autocomplete="off" ${isDMAllowed ? '' : 'disabled'}>
+        <button type="submit" class="chat-room-send-btn" title="發送訊息" ${isDMAllowed ? '' : 'disabled'} style="${isDMAllowed ? '' : 'opacity: 0.5; cursor: not-allowed;'}">
           <i class="fa-solid fa-paper-plane"></i>
         </button>
       </form>
@@ -3264,8 +3275,9 @@ function renderChatMainRoom() {
       // }
       // ─────────────────────────────────────────────────
 
-      // 重新整理聯絡人列表（鎖定/解鎖狀態可能改變）
+      // 重新整理聯絡人列表與聊天室（鎖定/解鎖狀態可能改變，且重新渲染輸入欄）
       renderChatMainUsersList();
+      renderChatMainRoom();
     });
   }
 
@@ -3287,11 +3299,6 @@ function renderChatMainRoom() {
 }
 
 function selectChatMainTarget(user) {
-  // 驗證追蹤關係
-  if (!canDMUser(user.handle)) {
-    showToast(`🔒 你和 ${user.username} 至少需要一方追蹤對方才能私訊`);
-    return;
-  }
   currentChatMainTarget = user;
   
   // Refresh contact list active status
