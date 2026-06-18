@@ -588,6 +588,10 @@ const elements = {
   followingModal: document.getElementById('following-modal'),
   btnCloseFollowingModal: document.getElementById('btn-close-following-modal'),
   followingModalBody: document.getElementById('following-modal-body'),
+  statsFollowersCard: document.getElementById('stats-followers-card'),
+  followersModal: document.getElementById('followers-modal'),
+  btnCloseFollowersModal: document.getElementById('btn-close-followers-modal'),
+  followersModalBody: document.getElementById('followers-modal-body'),
   loginRequiredModal: document.getElementById('login-required-modal'),
   
   btnCloseLoginRequired: document.getElementById('btn-close-login-required'),
@@ -898,6 +902,9 @@ function initEventListeners() {
   if (elements.statsFollowingCard) {
     elements.statsFollowingCard.addEventListener('click', openFollowingModal);
   }
+  if (elements.statsFollowersCard) {
+    elements.statsFollowersCard.addEventListener('click', openFollowersModal);
+  }
   if (elements.registerHandle) {
     elements.registerHandle.addEventListener('input', () => {
       if (elements.registerHandleError) elements.registerHandleError.textContent = '';
@@ -1049,6 +1056,7 @@ function initEventListeners() {
 
   if (elements.btnCloseAuthorModal) elements.btnCloseAuthorModal.addEventListener('click', () => { closeModal(elements.authorModal); });
   if (elements.btnCloseFollowingModal) elements.btnCloseFollowingModal.addEventListener('click', () => { closeModal(elements.followingModal); });
+  if (elements.btnCloseFollowersModal) elements.btnCloseFollowersModal.addEventListener('click', () => { closeModal(elements.followersModal); });
 
   // 登入提示 modal 相關綁定
   if (elements.btnCloseLoginRequired) elements.btnCloseLoginRequired.addEventListener('click', closeLoginRequiredModal);
@@ -2073,6 +2081,9 @@ function toggleFollowing(handle, name) {
   if (elements.followingModal && elements.followingModal.classList.contains('open')) {
     renderFollowingModal();
   }
+  if (elements.followersModal && elements.followersModal.classList.contains('open')) {
+    renderFollowersModal();
+  }
 }
 
 function openFollowingModal() {
@@ -2130,6 +2141,69 @@ function renderFollowingModal() {
   });
 
   elements.followingModalBody.appendChild(listEl);
+}
+
+function openFollowersModal() {
+  if (!elements.followersModal) return;
+  if (!requireLogin()) return;
+  renderFollowersModal();
+  openModal(elements.followersModal, elements.statsFollowersCard);
+}
+
+function renderFollowersModal() {
+  if (!elements.followersModalBody) return;
+  elements.followersModalBody.innerHTML = '';
+
+  const followersList = allUsers.filter(u =>
+    u.handle !== currentUser.handle &&
+    Array.isArray(u.following) &&
+    u.following.includes(currentUser.handle)
+  );
+
+  if (followersList.length === 0) {
+    elements.followersModalBody.innerHTML = `
+      <div class="glass-panel" style="padding: 30px 20px; text-align:center; color: var(--text-muted);">
+        <i class="fa-regular fa-face-frown" style="font-size: 28px; margin-bottom: 10px; color: var(--tag-text);"></i>
+        <div>你目前尚無任何粉絲。</div>
+        <div style="margin-top:10px; font-size:13px;">分享生活動態，吸引更多人關注你吧！✨</div>
+      </div>
+    `;
+    return;
+  }
+
+  const listEl = document.createElement('div');
+  listEl.className = 'following-list';
+
+  followersList.forEach(user => {
+    const isFollowingThem = isFollowing(user.handle);
+
+    const item = document.createElement('div');
+    item.className = 'following-list-item';
+    
+    const avatarSrc = user.avatar || getFallbackAvatar(user.handle);
+    const bioText = user.bio || '探索宇宙的冒險者 🚀';
+
+    item.innerHTML = `
+      <img src="${avatarSrc}" alt="${user.username}" class="user-avatar-sm">
+      <div class="follow-info">
+        <h5>${user.username}</h5>
+        <span>${user.handle}</span>
+        <small class="follow-bio">${bioText}</small>
+      </div>
+      <button class="btn-follow-mock ${isFollowingThem ? 'following' : ''}" type="button">
+        ${isFollowingThem ? '已追蹤' : '回追'}
+      </button>
+    `;
+
+    const followBtn = item.querySelector('.btn-follow-mock');
+    followBtn.addEventListener('click', () => {
+      toggleFollowing(user.handle, user.username);
+    });
+
+    listEl.appendChild(item);
+  });
+
+  elements.followersModalBody.appendChild(listEl);
 }
 
 function updatePostFormState() {
