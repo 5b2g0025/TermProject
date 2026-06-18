@@ -2984,6 +2984,44 @@ button[disabled] {
   color: var(--text-muted);
 }
 
+/* 追蹤 / 取消追蹤按鈕 */
+.chat-room-follow-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  background: rgba(168, 85, 247, 0.12);
+  color: #c084fc;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.chat-room-follow-btn:hover {
+  background: rgba(168, 85, 247, 0.25);
+  border-color: rgba(168, 85, 247, 0.8);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.2);
+}
+
+.chat-room-follow-btn.following {
+  background: var(--input-bg);
+  border-color: var(--glass-border);
+  color: var(--text-muted);
+}
+
+.chat-room-follow-btn.following:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+}
+
 .chat-room-messages {
   flex: 1;
   padding: 20px;

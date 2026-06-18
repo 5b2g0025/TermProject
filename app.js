@@ -3175,6 +3175,8 @@ function renderChatMainRoom() {
   }
   
   const avatarSrc = currentChatMainTarget.avatar || getFallbackAvatar(currentChatMainTarget.handle);
+  const alreadyFollowing = isFollowing(currentChatMainTarget.handle);
+
   roomPaneEl.innerHTML = `
     <div class="chat-room-header">
       <div class="chat-room-target">
@@ -3184,6 +3186,10 @@ function renderChatMainRoom() {
           <span class="chat-room-target-handle">${escapeHTML(currentChatMainTarget.handle)}</span>
         </div>
       </div>
+      <button class="chat-room-follow-btn ${alreadyFollowing ? 'following' : ''}" id="btn-chat-follow-toggle">
+        <i class="fa-solid ${alreadyFollowing ? 'fa-user-minus' : 'fa-user-plus'}"></i>
+        <span>${alreadyFollowing ? '取消追蹤' : '追蹤'}</span>
+      </button>
     </div>
     
     <div class="chat-room-messages" id="chat-main-messages-body">
@@ -3200,6 +3206,18 @@ function renderChatMainRoom() {
     </div>
   `;
   
+  // Bind follow/unfollow button
+  const followToggleBtn = document.getElementById('btn-chat-follow-toggle');
+  if (followToggleBtn) {
+    followToggleBtn.addEventListener('click', () => {
+      toggleFollowing(currentChatMainTarget.handle, currentChatMainTarget.username);
+      // Re-render room header to reflect new state
+      renderChatMainRoom();
+      // Re-render contact list (lock/unlock state may change)
+      renderChatMainUsersList();
+    });
+  }
+
   // Bind input form submit
   const inputForm = document.getElementById('chat-main-input-form');
   const inputField = document.getElementById('chat-main-input-field');
