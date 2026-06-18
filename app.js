@@ -34,7 +34,7 @@ const PRESET_AVATARS = [
   "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
   "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80"
 ];
-let selectedRegisterAvatar = PRESET_AVATARS[0];
+let selectedRegisterAvatar = "https://cdn2.ettoday.net/images/1161/d1161122.jpg";
 
 // 初始預設的動態牆貼文資料（豐富版：多位創作者）
 const INITIAL_POSTS_DATA = [
