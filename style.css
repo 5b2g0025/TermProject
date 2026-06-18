@@ -335,13 +335,13 @@ textarea {
 }
 
 .stat-val {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--text-main);
 }
 
 .stat-lbl {
-  font-size: 13px;
+  font-size: 11px;
   color: var(--text-main);
   opacity: 0.85;
   margin-top: 4px;
