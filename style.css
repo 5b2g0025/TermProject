@@ -313,15 +313,16 @@ textarea {
 }
 
 .stat-val {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text-main);
 }
 
 .stat-lbl {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-top: 2px;
+  font-size: 13px;
+  color: var(--text-main);
+  opacity: 0.85;
+  margin-top: 4px;
 }
 
 .stat-clickable {
