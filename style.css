@@ -169,6 +169,28 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding-right: 8px;
+  
+  /* Firefox standard styling */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168, 85, 247, 0.45) rgba(255, 255, 255, 0.05);
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.45);
+  border-radius: 3px;
+}
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 85, 247, 0.75);
 }
 .brand-section {
   display: flex;
@@ -1850,6 +1872,9 @@ button[disabled] {
   .sidebar {
     position: static;
     width: 100%;
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
   }
 
   .sidebar-menu {
