@@ -1037,7 +1037,7 @@ function initEventListeners() {
     }
   });
 
-  // 開發環境快捷鍵 (Ctrl + Shift + B 或 Ctrl + Shift + Y) 直接登入管理員並切換至後台
+  // 開發環境快捷鍵 (Ctrl + Shift + L) 直接登入管理員並切換至後台
   document.addEventListener('keydown', (e) => {
     const hostname = window.location.hostname;
     const protocol = window.location.protocol;
@@ -1053,17 +1053,20 @@ function initEventListeners() {
       /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
       /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname);
     
-    // 支援 B 鍵或 Y 鍵 (解決 B 鍵可能與瀏覽器書籤列衝突的問題)
-    // 支援 e.code 與 e.keyCode 解決中文輸入法下 e.key 變成 Unidentified 的問題
-    const isKeyB = (e.key === 'B' || e.key === 'b' || e.code === 'KeyB' || e.keyCode === 66);
-    const isKeyY = (e.key === 'Y' || e.key === 'y' || e.code === 'KeyY' || e.keyCode === 89);
-    
-    const triggerKey = isKeyB || isKeyY;
+    // 監聽 Ctrl + Shift + L (L 鍵對應 KeyL 或 keyCode 76)
+    const isKeyL = (e.key === 'L' || e.key === 'l' || e.code === 'KeyL' || e.keyCode === 76);
     const triggerModifiers = e.ctrlKey && e.shiftKey;
-    const bypassEnvCheck = e.altKey; // 加按 Alt 鍵 (Ctrl + Shift + Alt + Y) 即可強制繞過環境檢查
+    const bypassEnvCheck = e.altKey; // 加按 Alt 鍵 (Ctrl + Shift + Alt + L) 即可強制繞過環境檢查
     
-    if (triggerModifiers && triggerKey && (isDevelopment || bypassEnvCheck)) {
+    if (triggerModifiers && isKeyL && (isDevelopment || bypassEnvCheck)) {
       e.preventDefault();
+      
+      // 要求輸入數字密碼
+      const password = prompt("請輸入進入管理後台的數字密碼：");
+      if (password !== "888888") {
+        showToast("❌ 密碼錯誤，拒絕進入後台！");
+        return;
+      }
       
       // 模擬管理員資料
       const adminUser = {
@@ -1106,7 +1109,7 @@ function initEventListeners() {
         renderPosts();
       }
       
-      showToast("⚡ 已啟用開發者捷徑：已強制以管理員身分登入並切換至後台！");
+      showToast("⚡ 已啟用開發者捷徑：已驗證密碼並以管理員身分登入！");
     }
   });
 
@@ -1114,6 +1117,13 @@ function initEventListeners() {
   const brandSection = document.querySelector('.brand-section');
   if (brandSection) {
     brandSection.addEventListener('dblclick', () => {
+      // 要求輸入數字密碼
+      const password = prompt("請輸入進入管理後台的數字密碼：");
+      if (password !== "888888") {
+        showToast("❌ 密碼錯誤，拒絕進入後台！");
+        return;
+      }
+
       // 模擬管理員資料
       const adminUser = {
         username: "管理員 Admin",
@@ -1155,7 +1165,7 @@ function initEventListeners() {
         renderPosts();
       }
       
-      showToast("⚡ 已啟用開發者捷徑：雙擊 Logo 自動以管理員身分登入並切換至後台！");
+      showToast("⚡ 已啟用開發者捷徑：雙擊 Logo 已驗證密碼並成功切換至後台！");
     });
   }
 }
