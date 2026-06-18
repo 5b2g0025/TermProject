@@ -2113,28 +2113,28 @@ function renderFollowingModal() {
   listEl.className = 'following-list';
 
   followingList.forEach(handle => {
-    const user = RECOMMENDED_USERS.find(u => u.handle === handle) || {
-      name: handle.replace('@', ''),
-      handle,
-      avatar: getFallbackAvatar(handle),
-      bio: '已追蹤的創作者'
-    };
+    const dbUser = allUsers.find(u => u.handle === handle);
+    const mockUser = RECOMMENDED_USERS.find(u => u.handle === handle);
+    
+    const displayName = dbUser ? dbUser.username : (mockUser ? mockUser.name : handle.replace('@', ''));
+    const displayAvatar = dbUser ? dbUser.avatar : (mockUser ? mockUser.avatar : getFallbackAvatar(handle));
+    const displayBio = dbUser ? (dbUser.bio || '探索宇宙的冒險者 🚀') : (mockUser ? mockUser.bio : '已追蹤的創作者');
 
     const item = document.createElement('div');
     item.className = 'following-list-item';
     item.innerHTML = `
-      <img src="${user.avatar}" alt="${user.name}" class="user-avatar-sm">
+      <img src="${displayAvatar || getFallbackAvatar(handle)}" alt="${displayName}" class="user-avatar-sm">
       <div class="follow-info">
-        <h5>${user.name}</h5>
-        <span>${user.handle}</span>
-        <small class="follow-bio">${user.bio}</small>
+        <h5>${displayName}</h5>
+        <span>${handle}</span>
+        <small class="follow-bio">${displayBio}</small>
       </div>
       <button class="btn-follow-mock following" type="button">取消追蹤</button>
     `;
 
     const cancelBtn = item.querySelector('.btn-follow-mock');
     cancelBtn.addEventListener('click', () => {
-      toggleFollowing(handle, user.name);
+      toggleFollowing(handle, displayName);
     });
 
     listEl.appendChild(item);
