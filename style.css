@@ -172,22 +172,27 @@ textarea {
   max-height: calc(100vh - 48px);
   overflow-y: auto;
   padding-right: 8px;
+  
+  /* Firefox standard styling */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168, 85, 247, 0.45) rgba(255, 255, 255, 0.05);
 }
 
 .sidebar::-webkit-scrollbar {
   width: 6px;
 }
 .sidebar::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 3px;
 }
 .sidebar::-webkit-scrollbar-thumb {
-  background: rgba(168, 85, 247, 0.35);
+  background: rgba(168, 85, 247, 0.45);
   border-radius: 3px;
 }
 .sidebar::-webkit-scrollbar-thumb:hover {
-  background: rgba(168, 85, 247, 0.65);
+  background: rgba(168, 85, 247, 0.75);
 }
+
 
 
 
