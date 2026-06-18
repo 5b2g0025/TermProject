@@ -1039,13 +1039,29 @@ function initEventListeners() {
 
   // 開發環境快捷鍵 (Ctrl + Shift + L) 直接登入管理員並切換至後台
   document.addEventListener('keydown', (e) => {
+    // 輸出組合鍵偵錯資訊至主控台 (F12 Console) 以協助開發偵錯
+    if (e.ctrlKey && e.shiftKey) {
+      console.log("AuraWall 開發者組合鍵偵測:", {
+        ctrl: e.ctrlKey,
+        shift: e.shiftKey,
+        alt: e.altKey,
+        key: e.key,
+        code: e.code,
+        keyCode: e.keyCode,
+        protocol: window.location.protocol,
+        hostname: window.location.hostname
+      });
+    }
+
     const hostname = window.location.hostname;
     const protocol = window.location.protocol;
     
-    // 判斷是否為本地開發環境的強效邏輯
+    // 判斷是否為本地開發環境的強效邏輯（新增支援 IPv6 本地端 ::1）
     const isDevelopment = 
       hostname === 'localhost' || 
       hostname === '127.0.0.1' || 
+      hostname === '::1' || 
+      hostname === '[::1]' || 
       protocol === 'file:' ||
       hostname.endsWith('.local') ||
       hostname.endsWith('.test') ||
