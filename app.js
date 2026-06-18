@@ -518,6 +518,7 @@ const elements = {
 
   // 主選單按鈕
   menuFeed: document.getElementById('menu-feed'),
+  menuChat: document.getElementById('menu-chat'),
   menuBookmarks: document.getElementById('menu-bookmarks'),
   menuAbout: document.getElementById('menu-about'),
   menuAdmin: document.getElementById('menu-admin'),
@@ -798,6 +799,8 @@ function loadUsersRealtime() {
     
     if (currentMenuTab === 'admin') {
       renderAdminDashboard();
+    } else if (currentMenuTab === 'chat') {
+      renderChatMainUsersList();
     }
   }, (err) => {
     console.error("Error listening to users from Firestore:", err);
@@ -879,6 +882,9 @@ function initEventListeners() {
 
   // 左側導覽列切換
   elements.menuFeed.addEventListener('click', () => switchMenu('feed'));
+  if (elements.menuChat) {
+    elements.menuChat.addEventListener('click', () => switchMenu('chat'));
+  }
   elements.menuBookmarks.addEventListener('click', () => switchMenu('bookmarks'));
   elements.menuAbout.addEventListener('click', () => switchMenu('about'));
   if (elements.menuAdmin) {
@@ -1245,6 +1251,7 @@ function renderApp() {
 function switchMenu(tab) {
   currentMenuTab = tab;
   elements.menuFeed.classList.remove('active');
+  if (elements.menuChat) elements.menuChat.classList.remove('active');
   elements.menuBookmarks.classList.remove('active');
   elements.menuAbout.classList.remove('active');
   if (elements.menuAdmin) elements.menuAdmin.classList.remove('active');
@@ -1254,6 +1261,11 @@ function switchMenu(tab) {
     elements.createPostArea.style.display = 'block';
     elements.feedTitle.textContent = "精彩動態";
     elements.feedSubtitle.textContent = "探索社群的最新靈感與精彩瞬間";
+  } else if (tab === 'chat') {
+    if (elements.menuChat) elements.menuChat.classList.add('active');
+    elements.createPostArea.style.display = 'none';
+    elements.feedTitle.textContent = "私訊聊天";
+    elements.feedSubtitle.textContent = "與社群好友進行即時私密對話";
   } else if (tab === 'bookmarks') {
     elements.menuBookmarks.classList.add('active');
     elements.createPostArea.style.display = 'none';
@@ -1276,6 +1288,23 @@ function switchMenu(tab) {
 // 主要貼文牆卡片生成
 function renderPosts() {
   elements.postsFeed.innerHTML = '';
+
+  // 如果切換到「私訊聊天」獨立畫面
+  if (currentMenuTab === 'chat') {
+    if (elements.activeFilterBadge) elements.activeFilterBadge.style.display = 'none';
+    if (!isLoggedIn()) {
+      elements.postsFeed.innerHTML = `
+          <div class="glass-panel" style="padding: 40px 24px; text-align: center; color: var(--text-muted);">
+            <i class="fa-solid fa-circle-exclamation" style="font-size: 28px; margin-bottom: 12px; display:block; color: var(--tag-text);"></i>
+            <h3 style="margin-bottom: 10px; color: var(--text-main);">請先登入</h3>
+            <p style="margin: 0;">登入後即可與社群好友進行私訊聊天。</p>
+          </div>
+        `;
+      return;
+    }
+    renderChatMainPage();
+    return;
+  }
 
   // 如果切換到「後台管理」獨立畫面
   if (currentMenuTab === 'admin') {
@@ -1501,7 +1530,8 @@ function renderPosts() {
           showToast("💡 您不能私訊給自己喔！");
           return;
         }
-        openChatWith({
+        switchMenu('chat');
+        selectChatMainTarget({
           handle: post.authorHandle,
           username: post.authorName,
           avatar: avatarSrc
@@ -3141,6 +3171,214 @@ function sendChatMessage(text) {
     })
     .catch((err) => {
       console.error("Error sending message:", err);
+      showToast("❌ 傳送訊息失敗，請重試");
+    });
+}
+
+// ==========================================
+// 11. MAIN CHAT PAGE CONTROLLER (主要私訊頁面控制模組)
+// ==========================================
+let currentChatMainTarget = null;
+let chatMainListener = null;
+
+function renderChatMainPage() {
+  elements.postsFeed.innerHTML = `
+    <div class="chat-main-layout">
+      <!-- Left sidebar: Contact list -->
+      <aside class="chat-sidebar-users">
+        <div class="chat-users-header">
+          <i class="fa-solid fa-users"></i>
+          <span>聯絡人列表</span>
+        </div>
+        <div class="chat-users-list" id="chat-main-users-list">
+          <!-- Rendered dynamically -->
+        </div>
+      </aside>
+      
+      <!-- Right pane: Chat room -->
+      <div class="chat-room-pane" id="chat-main-room-pane">
+        <!-- Rendered dynamically depending on if a target is selected -->
+      </div>
+    </div>
+  `;
+
+  // Render contacts list
+  renderChatMainUsersList();
+
+  // Render the chat room (empty state initially)
+  renderChatMainRoom();
+}
+
+function renderChatMainUsersList() {
+  const usersListEl = document.getElementById('chat-main-users-list');
+  if (!usersListEl) return;
+  
+  usersListEl.innerHTML = '';
+  
+  // Filter out current logged-in user
+  const contacts = allUsers.filter(u => u.handle !== currentUser.handle);
+  
+  if (contacts.length === 0) {
+    usersListEl.innerHTML = `
+      <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px;">
+        目前沒有其他使用者
+      </div>
+    `;
+    return;
+  }
+  
+  contacts.forEach(user => {
+    const item = document.createElement('div');
+    const isActive = currentChatMainTarget && currentChatMainTarget.handle === user.handle;
+    item.className = `chat-user-item ${isActive ? 'active' : ''}`;
+    
+    const avatarSrc = user.avatar || getFallbackAvatar(user.handle);
+    
+    item.innerHTML = `
+      <img src="${avatarSrc}" alt="avatar" class="chat-user-item-avatar">
+      <div class="chat-user-item-info">
+        <span class="chat-user-item-name">${escapeHTML(user.username)}</span>
+        <span class="chat-user-item-handle">${escapeHTML(user.handle)}</span>
+      </div>
+    `;
+    
+    item.addEventListener('click', () => {
+      selectChatMainTarget(user);
+    });
+    
+    usersListEl.appendChild(item);
+  });
+}
+
+function renderChatMainRoom() {
+  const roomPaneEl = document.getElementById('chat-main-room-pane');
+  if (!roomPaneEl) return;
+  
+  if (!currentChatMainTarget) {
+    roomPaneEl.innerHTML = `
+      <div class="chat-room-empty">
+        <i class="fa-regular fa-comments"></i>
+        <h3>開始私訊聊天</h3>
+        <p>從左側聯絡人列表中選擇一位社群好友，即可開始進行安全的即時私密對話 ✨</p>
+      </div>
+    `;
+    return;
+  }
+  
+  const avatarSrc = currentChatMainTarget.avatar || getFallbackAvatar(currentChatMainTarget.handle);
+  roomPaneEl.innerHTML = `
+    <div class="chat-room-header">
+      <div class="chat-room-target">
+        <img src="${avatarSrc}" alt="avatar" class="chat-room-target-avatar">
+        <div class="chat-room-target-info">
+          <span class="chat-room-target-name">${escapeHTML(currentChatMainTarget.username)}</span>
+          <span class="chat-room-target-handle">${escapeHTML(currentChatMainTarget.handle)}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="chat-room-messages" id="chat-main-messages-body">
+      <!-- Loaded dynamically -->
+    </div>
+    
+    <div class="chat-room-input-container">
+      <form class="chat-room-input-form" id="chat-main-input-form">
+        <input type="text" placeholder="輸入訊息..." class="chat-room-input" id="chat-main-input-field" required autocomplete="off">
+        <button type="submit" class="chat-room-send-btn" title="發送訊息">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
+      </form>
+    </div>
+  `;
+  
+  // Bind input form submit
+  const inputForm = document.getElementById('chat-main-input-form');
+  const inputField = document.getElementById('chat-main-input-field');
+  if (inputForm && inputField) {
+    inputForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = inputField.value.trim();
+      if (text) {
+        sendChatMainMessage(text);
+      }
+    });
+  }
+  
+  // Start messages real-time sync for this room
+  startChatMainListener();
+}
+
+function selectChatMainTarget(user) {
+  currentChatMainTarget = user;
+  
+  // Refresh contact list active status
+  renderChatMainUsersList();
+  
+  // Refresh chat room view
+  renderChatMainRoom();
+}
+
+function startChatMainListener() {
+  if (chatMainListener) chatMainListener(); // unsubscribe
+  
+  const messagesBody = document.getElementById('chat-main-messages-body');
+  if (!messagesBody || !currentChatMainTarget || !currentUser) return;
+  
+  chatMainListener = db.collection('messages')
+    .orderBy('timestamp', 'asc')
+    .onSnapshot((snapshot) => {
+      messagesBody.innerHTML = '';
+      let hasMessages = false;
+      
+      snapshot.forEach((doc) => {
+        const msg = doc.data();
+        const isSentByMe = msg.senderHandle === currentUser.handle && msg.receiverHandle === currentChatMainTarget.handle;
+        const isReceivedByMe = msg.senderHandle === currentChatMainTarget.handle && msg.receiverHandle === currentUser.handle;
+        
+        if (isSentByMe || isReceivedByMe) {
+          hasMessages = true;
+          const bubble = document.createElement('div');
+          bubble.className = `chat-bubble ${isSentByMe ? 'sent' : 'received'}`;
+          bubble.textContent = msg.text;
+          messagesBody.appendChild(bubble);
+        }
+      });
+      
+      if (!hasMessages) {
+        messagesBody.innerHTML = `
+          <div class="chat-empty-state">
+            <i class="fa-regular fa-paper-plane"></i>
+            <p>與 <strong>${escapeHTML(currentChatMainTarget.username)}</strong> 開始對話...<br>傳送第一則溫慢訊息吧 ✨</p>
+          </div>
+        `;
+      }
+      
+      // Auto scroll to bottom
+      messagesBody.scrollTop = messagesBody.scrollHeight;
+    }, (err) => {
+      console.error("Error loading chat messages in main layout:", err);
+    });
+}
+
+function sendChatMainMessage(text) {
+  if (!currentChatMainTarget || !text.trim() || !currentUser) return;
+  
+  const msgObj = {
+    senderHandle: currentUser.handle,
+    senderName: currentUser.username,
+    receiverHandle: currentChatMainTarget.handle,
+    receiverName: currentChatMainTarget.username,
+    text: text.trim(),
+    timestamp: new Date().toISOString()
+  };
+  
+  db.collection('messages').add(msgObj)
+    .then(() => {
+      const inputField = document.getElementById('chat-main-input-field');
+      if (inputField) inputField.value = '';
+    })
+    .catch((err) => {
+      console.error("Error sending message in main layout:", err);
       showToast("❌ 傳送訊息失敗，請重試");
     });
 }
