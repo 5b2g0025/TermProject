@@ -3187,8 +3187,8 @@ function renderChatMainRoom() {
         </div>
       </div>
       <button class="chat-room-follow-btn ${alreadyFollowing ? 'following' : ''}" id="btn-chat-follow-toggle">
-        <i class="fa-solid ${alreadyFollowing ? 'fa-user-minus' : 'fa-user-plus'}"></i>
-        <span>${alreadyFollowing ? '取消追蹤' : '追蹤'}</span>
+        <i class="fa-solid ${alreadyFollowing ? 'fa-check' : 'fa-user-plus'}"></i>
+        <span>${alreadyFollowing ? '已追蹤' : '追蹤'}</span>
       </button>
     </div>
     
@@ -3206,14 +3206,65 @@ function renderChatMainRoom() {
     </div>
   `;
   
-  // Bind follow/unfollow button
+  // ── 追蹤 / 取消追蹤按鈕 ──────────────────────────────
   const followToggleBtn = document.getElementById('btn-chat-follow-toggle');
   if (followToggleBtn) {
-    followToggleBtn.addEventListener('click', () => {
-      toggleFollowing(currentChatMainTarget.handle, currentChatMainTarget.username);
-      // Re-render room header to reflect new state
-      renderChatMainRoom();
-      // Re-render contact list (lock/unlock state may change)
+    const btnSpan = followToggleBtn.querySelector('span');
+    const btnIcon = followToggleBtn.querySelector('i');
+
+    // Hover：已追蹤時 hover 改顯示「取消追蹤」提示
+    followToggleBtn.addEventListener('mouseenter', () => {
+      if (followToggleBtn.classList.contains('following')) {
+        btnSpan.textContent = '取消追蹤';
+        btnIcon.className = 'fa-solid fa-user-minus';
+      }
+    });
+    followToggleBtn.addEventListener('mouseleave', () => {
+      if (followToggleBtn.classList.contains('following')) {
+        btnSpan.textContent = '已追蹤';
+        btnIcon.className = 'fa-solid fa-check';
+      }
+    });
+
+    followToggleBtn.addEventListener('click', async () => {
+      const targetHandle = currentChatMainTarget.handle;
+      const targetName   = currentChatMainTarget.username;
+      const nowFollowing = followToggleBtn.classList.contains('following');
+
+      // ── 樂觀更新 UI（先切換，再等 API 確認）──
+      toggleFollowing(targetHandle, targetName);
+
+      if (nowFollowing) {
+        // 取消追蹤 → 變成實心紫色「追蹤」
+        followToggleBtn.classList.remove('following');
+        btnSpan.textContent = '追蹤';
+        btnIcon.className = 'fa-solid fa-user-plus';
+      } else {
+        // 追蹤 → 變成 outline「已追蹤」
+        followToggleBtn.classList.add('following');
+        btnSpan.textContent = '已追蹤';
+        btnIcon.className = 'fa-solid fa-check';
+      }
+
+      // ── API 預留區塊（之後可串接後端資料庫）──────────
+      // try {
+      //   await fetch('/api/follow', {
+      //     method: 'POST',
+      //     headers: { 'Content-Type': 'application/json' },
+      //     body: JSON.stringify({
+      //       followerHandle: currentUser.handle,
+      //       targetHandle:   targetHandle,
+      //       action: nowFollowing ? 'unfollow' : 'follow'
+      //     })
+      //   });
+      // } catch (err) {
+      //   console.error('Follow API error:', err);
+      //   // 若 API 失敗，回滾 UI
+      //   toggleFollowing(targetHandle, targetName);
+      // }
+      // ─────────────────────────────────────────────────
+
+      // 重新整理聯絡人列表（鎖定/解鎖狀態可能改變）
       renderChatMainUsersList();
     });
   }

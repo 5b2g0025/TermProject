@@ -2986,40 +2986,55 @@ button[disabled] {
 
 /* 追蹤 / 取消追蹤按鈕 */
 .chat-room-follow-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 16px;
-  border-radius: 20px;
+  padding: 8px 18px;
+  border-radius: 24px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all var(--transition-fast);
-  border: 1px solid rgba(168, 85, 247, 0.5);
-  background: rgba(168, 85, 247, 0.12);
-  color: #c084fc;
   white-space: nowrap;
   flex-shrink: 0;
+  letter-spacing: 0.3px;
+  transition: background var(--transition-fast),
+              border-color var(--transition-fast),
+              color var(--transition-fast),
+              transform var(--transition-fast),
+              box-shadow var(--transition-fast);
+
+  /* 預設：未追蹤 → 實心紫色背景、白色文字 */
+  background: var(--grad-primary);
+  border: 2px solid transparent;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
 }
 
 .chat-room-follow-btn:hover {
-  background: rgba(168, 85, 247, 0.25);
-  border-color: rgba(168, 85, 247, 0.8);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.2);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+  filter: brightness(1.08);
 }
 
+.chat-room-follow-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+/* 已追蹤 → Outline 紫色外框、紫色字 */
 .chat-room-follow-btn.following {
-  background: var(--input-bg);
-  border-color: var(--glass-border);
-  color: var(--text-muted);
+  background: transparent;
+  border: 2px solid #a855f7;
+  color: #a855f7;
+  box-shadow: none;
 }
 
+/* 已追蹤 hover → 外框變紅、文字提示「取消追蹤」 */
 .chat-room-follow-btn.following:hover {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.4);
-  color: #f87171;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+  background: rgba(239, 68, 68, 0.08);
+  border-color: #ef4444;
+  color: #ef4444;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.18);
 }
 
 .chat-room-messages {
