@@ -501,6 +501,7 @@ const elements = {
   menuFeed: document.getElementById('menu-feed'),
   menuBookmarks: document.getElementById('menu-bookmarks'),
   menuAbout: document.getElementById('menu-about'),
+  menuAdmin: document.getElementById('menu-admin'),
 
   // 搜尋與頂部過濾列
   searchInput: document.getElementById('search-input'),
@@ -617,6 +618,23 @@ const elements = {
 // 3. INITIALIZATION (初始化啟動)
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
+  // 檢查 URL 參數以支援特定網址直達後台 (?mode=devadmin)
+  const urlParams = new URLSearchParams(window.location.search);
+  const hashParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '');
+  const isDevAdminMode = urlParams.get('mode') === 'devadmin' || hashParams.get('mode') === 'devadmin';
+
+  if (isDevAdminMode) {
+    const adminUser = {
+      username: "管理員 Admin",
+      handle: "@aurawall_admin",
+      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+      email: "admin@aurawall.com",
+      provider: 'local'
+    };
+    currentUser = adminUser;
+    localStorage.setItem('aurawall_logged_in_user', JSON.stringify(adminUser));
+  }
+
   initTheme();
   initEventListeners();
   initPresets();
@@ -625,13 +643,58 @@ document.addEventListener('DOMContentLoaded', () => {
   renderApp();
   updateAuthUI();
 
-  const loggedInUser = localStorage.getItem('aurawall_logged_in_user');
-  if (loggedInUser) {
-    const user = JSON.parse(loggedInUser);
-    showToast(`歡迎回來，${user.username}！AuraWall 已成功解鎖。`);
+  if (isDevAdminMode) {
+    if (elements.menuAdmin) {
+      elements.menuAdmin.style.display = 'flex';
+    }
+    switchMenu('admin');
+    showToast("⚡ 偵測到模式參數：已自動登入管理員並導向後台！");
   } else {
-    showToast("歡迎回來！AuraWall 已成功解鎖，免登入直接探索。");
+    const loggedInUser = localStorage.getItem('aurawall_logged_in_user');
+    if (loggedInUser) {
+      const user = JSON.parse(loggedInUser);
+      showToast(`歡迎回來，${user.username}！AuraWall 已成功解鎖。`);
+    } else {
+      showToast("歡迎回來！AuraWall 已成功解鎖，免登入直接探索。");
+    }
   }
+
+  // 跨分頁同步：當其他分頁（其他用戶）發佈或刪除貼文時，自動更新
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'aurawall_posts') {
+      const oldCount = posts.length;
+      loadSavedPosts();
+      renderApp();
+      // 如果有新貼文，顯示提示
+      if (posts.length > oldCount) {
+        showToast(`🆕 有 ${posts.length - oldCount} 則新貼文！`);
+      }
+    }
+    // 用戶清單同步（新用戶註冊時其他分頁也能看到）
+    if (e.key === 'aurawall_users') {
+      // 更新本機快取，不需重新渲染
+    }
+    // 登出/登入狀態跨分頁同步（當其他分頁登出或登入時，更新 UI 與色帶顏色）
+    if (e.key === 'aurawall_logged_in_user') {
+      updateAuthUI();
+      if (!e.newValue) {
+        resetAccentColor();
+      } else {
+        const savedColor = localStorage.getItem('aurawall_accent_color');
+        if (savedColor) {
+          applyAccentColor(savedColor);
+        }
+      }
+    }
+    // 跨分頁同步色彩設定
+    if (e.key === 'aurawall_accent_color') {
+      if (e.newValue) {
+        applyAccentColor(e.newValue);
+      } else {
+        resetAccentColor();
+      }
+    }
+  });
 });
 
 // 外觀主題設定初始化
@@ -641,10 +704,15 @@ function initTheme() {
   if (elements.themeIcon) {
     elements.themeIcon.className = savedTheme === 'light' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
   }
-  // 還原色帶顏色
-  const savedColor = localStorage.getItem('aurawall_accent_color');
-  if (savedColor) {
-    setTimeout(() => applyAccentColor(savedColor), 0);
+  // 還原色帶顏色（僅在登入狀態下還原）
+  const loggedInUser = localStorage.getItem('aurawall_logged_in_user');
+  if (loggedInUser) {
+    const savedColor = localStorage.getItem('aurawall_accent_color');
+    if (savedColor) {
+      setTimeout(() => applyAccentColor(savedColor), 0);
+    }
+  } else {
+    setTimeout(() => resetAccentColor(), 0);
   }
 }
 
@@ -768,6 +836,9 @@ function initEventListeners() {
   elements.menuFeed.addEventListener('click', () => switchMenu('feed'));
   elements.menuBookmarks.addEventListener('click', () => switchMenu('bookmarks'));
   elements.menuAbout.addEventListener('click', () => switchMenu('about'));
+  if (elements.menuAdmin) {
+    elements.menuAdmin.addEventListener('click', () => switchMenu('admin'));
+  }
   if (elements.menuAuth) {
     elements.menuAuth.addEventListener('click', handleAuthButtonClick);
   }
@@ -965,6 +1036,70 @@ function initEventListeners() {
       closePopup(elements.emojiPickerPopup);
     }
   });
+
+  // 開發環境快捷鍵 (Ctrl + Shift + B) 直接登入管理員並切換至後台
+  document.addEventListener('keydown', (e) => {
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+    
+    // 判斷是否為本地開發環境的強效邏輯
+    const isDevelopment = 
+      hostname === 'localhost' || 
+      hostname === '127.0.0.1' || 
+      protocol === 'file:' ||
+      hostname.endsWith('.local') ||
+      hostname.endsWith('.test') ||
+      /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname);
+    
+    if (isDevelopment && e.ctrlKey && e.shiftKey && (e.key === 'B' || e.key === 'b')) {
+      e.preventDefault();
+      
+      // 模擬管理員資料
+      const adminUser = {
+        username: "管理員 Admin",
+        handle: "@aurawall_admin",
+        avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+        email: "admin@aurawall.com",
+        provider: 'local'
+      };
+      
+      // 強制寫入全域狀態與 LocalStorage
+      currentUser = adminUser;
+      localStorage.setItem('aurawall_logged_in_user', JSON.stringify(adminUser));
+      
+      // 更新 UI 狀態，防禦任何 DOM 找不到導致的例外中斷
+      try {
+        updateAuthUI();
+      } catch (err) {
+        console.warn("updateAuthUI encountered an issue but proceeding: ", err);
+      }
+      
+      // 強制確保後台選單按鈕顯示與狀態高亮
+      if (elements.menuAdmin) {
+        elements.menuAdmin.style.display = 'flex';
+        elements.menuAdmin.classList.add('active');
+      }
+      if (elements.menuFeed) elements.menuFeed.classList.remove('active');
+      if (elements.menuBookmarks) elements.menuBookmarks.classList.remove('active');
+      if (elements.menuAbout) elements.menuAbout.classList.remove('active');
+      
+      // 強制切換頁面內容至後台分頁
+      try {
+        switchMenu('admin');
+      } catch (err) {
+        console.warn("switchMenu encountered an issue, running manual DOM switch: ", err);
+        currentMenuTab = 'admin';
+        if (elements.createPostArea) elements.createPostArea.style.display = 'none';
+        if (elements.feedTitle) elements.feedTitle.textContent = "後台管理系統";
+        if (elements.feedSubtitle) elements.feedSubtitle.textContent = "數據分析、用戶權限與內容審查中心";
+        renderPosts();
+      }
+      
+      showToast("⚡ 已啟用開發者捷徑：已強制以管理員身分登入並切換至後台！");
+    }
+  });
 }
 
 // ==========================================
@@ -983,6 +1118,7 @@ function switchMenu(tab) {
   elements.menuFeed.classList.remove('active');
   elements.menuBookmarks.classList.remove('active');
   elements.menuAbout.classList.remove('active');
+  if (elements.menuAdmin) elements.menuAdmin.classList.remove('active');
 
   if (tab === 'feed') {
     elements.menuFeed.classList.add('active');
@@ -999,6 +1135,11 @@ function switchMenu(tab) {
     elements.createPostArea.style.display = 'none';
     elements.feedTitle.textContent = "關於本站";
     elements.feedSubtitle.textContent = "AuraWall 設計理念與系統架構";
+  } else if (tab === 'admin') {
+    if (elements.menuAdmin) elements.menuAdmin.classList.add('active');
+    elements.createPostArea.style.display = 'none';
+    elements.feedTitle.textContent = "後台管理系統";
+    elements.feedSubtitle.textContent = "數據分析、用戶權限與內容審查中心";
   }
   renderPosts();
 }
@@ -1006,6 +1147,23 @@ function switchMenu(tab) {
 // 主要貼文牆卡片生成
 function renderPosts() {
   elements.postsFeed.innerHTML = '';
+
+  // 如果切換到「後台管理」獨立畫面
+  if (currentMenuTab === 'admin') {
+    if (elements.activeFilterBadge) elements.activeFilterBadge.style.display = 'none';
+    if (!isLoggedIn() || currentUser.handle !== '@aurawall_admin') {
+      elements.postsFeed.innerHTML = `
+          <div class="glass-panel" style="padding: 40px 24px; text-align: center; color: var(--text-muted);">
+            <i class="fa-solid fa-lock" style="font-size: 28px; margin-bottom: 12px; display:block; color: #ef4444;"></i>
+            <h3 style="margin-bottom: 10px; color: var(--text-main);">權限不足 Access Denied</h3>
+            <p style="margin: 0;">此頁面僅供系統管理員訪問，請登入管理員帳戶再試。</p>
+          </div>
+        `;
+      return;
+    }
+    renderAdminDashboard();
+    return;
+  }
 
   // 如果切換到「關於本站」獨立畫面
   if (currentMenuTab === 'about') {
@@ -1504,6 +1662,15 @@ function updateAuthUI() {
       elements.menuAuth.querySelector('i').className = "fa-solid fa-right-from-bracket";
     }
     syncCurrentUserPosts(currentUser.handle, currentUser.username, currentUser.avatar);
+
+    // 套用此使用者的自訂色帶顏色，若無自訂則重置
+    if (currentUser.themeColor) {
+      localStorage.setItem('aurawall_accent_color', currentUser.themeColor);
+      applyAccentColor(currentUser.themeColor);
+    } else {
+      localStorage.removeItem('aurawall_accent_color');
+      resetAccentColor();
+    }
   } else {
     currentUser = DEFAULT_USER;
     currentUser.following = [];
@@ -1532,6 +1699,18 @@ function updateAuthUI() {
 
   // 同步發文框旁的大頭貼
   if (elements.postCreatorAvatar) elements.postCreatorAvatar.src = currentUser.avatar;
+
+  // 控制後台管理選單顯示
+  if (elements.menuAdmin) {
+    if (loggedInUser && currentUser.handle === '@aurawall_admin') {
+      elements.menuAdmin.style.display = 'flex';
+    } else {
+      elements.menuAdmin.style.display = 'none';
+      if (currentMenuTab === 'admin') {
+        switchMenu('feed');
+      }
+    }
+  }
 
   // 重新渲染與刷新計數器
   updateStatsCounter();
@@ -1725,6 +1904,22 @@ function renderProfileColorOptions() {
       applyAccentColor(col);
       // 儲存選擇
       localStorage.setItem('aurawall_accent_color', col);
+
+      // 同步更新當前使用者物件的色彩設定
+      const loggedInUser = localStorage.getItem('aurawall_logged_in_user');
+      if (loggedInUser) {
+        currentUser.themeColor = col;
+        localStorage.setItem('aurawall_logged_in_user', JSON.stringify(currentUser));
+        
+        // 更新註冊使用者列表 (aurawall_users) 中的該使用者設定，以便下次登入時還原
+        const users = JSON.parse(localStorage.getItem('aurawall_users') || '[]');
+        const userIdx = users.findIndex(u => u.email === currentUser.email);
+        if (userIdx !== -1) {
+          users[userIdx].themeColor = col;
+          localStorage.setItem('aurawall_users', JSON.stringify(users));
+        }
+      }
+
       document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
       btn.classList.add('selected');
     });
@@ -1741,6 +1936,16 @@ function applyAccentColor(col) {
   document.documentElement.style.setProperty('--sidebar-accent', col);
 }
 
+// 重置 accent 顏色回預設值
+function resetAccentColor() {
+  const profileCard = document.querySelector('.profile-card');
+  if (profileCard) {
+    profileCard.style.removeProperty('--card-accent');
+  }
+  document.documentElement.style.removeProperty('--sidebar-accent');
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+}
+
 function saveProfileEdits() {
   const name = elements.inputEditUsername.value.trim();
   let handle = elements.inputEditHandle.value.trim();
@@ -1749,7 +1954,27 @@ function saveProfileEdits() {
   if (name) currentUser.username = name;
   if (handle) currentUser.handle = handle;
   if (avatarUrl) currentUser.avatar = avatarUrl;
+
+  const savedColor = localStorage.getItem('aurawall_accent_color');
+  if (savedColor) {
+    currentUser.themeColor = savedColor;
+  }
+
   localStorage.setItem('aurawall_logged_in_user', JSON.stringify(currentUser));
+
+  // 將變更同步回註冊使用者列表 (aurawall_users)，以便下次登入時讀取
+  const users = JSON.parse(localStorage.getItem('aurawall_users') || '[]');
+  const userIdx = users.findIndex(u => u.email === currentUser.email);
+  if (userIdx !== -1) {
+    users[userIdx].username = currentUser.username;
+    users[userIdx].handle = currentUser.handle;
+    users[userIdx].avatar = currentUser.avatar;
+    if (savedColor) {
+      users[userIdx].themeColor = savedColor;
+    }
+    localStorage.setItem('aurawall_users', JSON.stringify(users));
+  }
+
   updateAuthUI();
   closeProfileEditModal();
   showToast('已更新個人檔案');
@@ -1882,6 +2107,8 @@ function handleAuthButtonClick() {
   if (loggedInUser) {
     // 執行登出流程
     localStorage.removeItem('aurawall_logged_in_user');
+    localStorage.removeItem('aurawall_accent_color'); // 登出後清除自訂顏色
+    resetAccentColor(); // 重置色帶顏色
     updateAuthUI();
     renderPosts();
     showToast("👋 您已成功登出 AuraWall！已回復為訪客身分。");
@@ -2138,3 +2365,377 @@ window.addEventListener('message', (event) => {
     window.handleSocialLogin(event.data.user);
   }
 });
+
+// ==========================================
+// 9. ADMIN PANEL CONTROLLER (後台管理邏輯)
+// ==========================================
+let currentAdminSection = 'users'; // 'users' | 'posts' | 'maintenance'
+
+function renderAdminDashboard() {
+  const users = JSON.parse(localStorage.getItem('aurawall_users') || '[]');
+  const totalPosts = posts.length;
+  const totalLikes = posts.reduce((sum, p) => sum + (p.likes || 0), 0);
+  
+  const postsFeed = elements.postsFeed;
+  if (!postsFeed) return;
+
+  postsFeed.innerHTML = `
+    <div class="admin-dashboard">
+      <!-- 數據統計看板 -->
+      <div class="admin-stats-grid">
+        <div class="admin-stat-card">
+          <div class="admin-stat-info">
+            <h3>註冊用戶數</h3>
+            <div class="stat-value">${users.length}</div>
+          </div>
+          <div class="admin-stat-icon">
+            <i class="fa-solid fa-users"></i>
+          </div>
+        </div>
+        
+        <div class="admin-stat-card">
+          <div class="admin-stat-info">
+            <h3>平台貼文總數</h3>
+            <div class="stat-value">${totalPosts}</div>
+          </div>
+          <div class="admin-stat-icon" style="background: rgba(99, 102, 241, 0.1); color: #6366f1;">
+            <i class="fa-solid fa-feather"></i>
+          </div>
+        </div>
+
+        <div class="admin-stat-card">
+          <div class="admin-stat-info">
+            <h3>累積按讚數</h3>
+            <div class="stat-value">${totalLikes}</div>
+          </div>
+          <div class="admin-stat-icon" style="background: rgba(244, 63, 94, 0.1); color: #f43f5e;">
+            <i class="fa-solid fa-heart"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- 功能分頁選單 -->
+      <div class="admin-tabs">
+        <button class="admin-tab-btn ${currentAdminSection === 'users' ? 'active' : ''}" id="admin-tab-users">
+          <i class="fa-solid fa-user-gear"></i> 用戶管理
+        </button>
+        <button class="admin-tab-btn ${currentAdminSection === 'posts' ? 'active' : ''}" id="admin-tab-posts">
+          <i class="fa-solid fa-message"></i> 貼文管理
+        </button>
+        <button class="admin-tab-btn ${currentAdminSection === 'maintenance' ? 'active' : ''}" id="admin-tab-maintenance">
+          <i class="fa-solid fa-screwdriver-wrench"></i> 系統維護
+        </button>
+      </div>
+
+      <!-- 分頁內容區域 -->
+      <div class="admin-content-section" id="admin-content-section">
+        <!-- 動態渲染處 -->
+      </div>
+    </div>
+  `;
+
+  // 綁定分頁按鈕事件
+  document.getElementById('admin-tab-users').addEventListener('click', () => {
+    currentAdminSection = 'users';
+    renderAdminDashboard();
+  });
+  document.getElementById('admin-tab-posts').addEventListener('click', () => {
+    currentAdminSection = 'posts';
+    renderAdminDashboard();
+  });
+  document.getElementById('admin-tab-maintenance').addEventListener('click', () => {
+    currentAdminSection = 'maintenance';
+    renderAdminDashboard();
+  });
+
+  // 渲染當前選取的分頁內容
+  const contentSection = document.getElementById('admin-content-section');
+  if (contentSection) {
+    if (currentAdminSection === 'users') {
+      renderAdminUsers(contentSection);
+    } else if (currentAdminSection === 'posts') {
+      renderAdminPosts(contentSection);
+    } else if (currentAdminSection === 'maintenance') {
+      renderAdminMaintenance(contentSection);
+    }
+  }
+}
+
+function renderAdminUsers(container) {
+  const users = JSON.parse(localStorage.getItem('aurawall_users') || '[]');
+  
+  let html = `
+    <h3 style="font-size: 18px; font-weight:600; margin-bottom: 4px; color: var(--text-main);"><i class="fa-solid fa-user-shield"></i> 註冊用戶名單</h3>
+    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">列出目前系統中所有註冊的本地會員帳號。管理員可以審查會員狀態或刪除違規帳號。</p>
+  `;
+
+  if (users.length === 0) {
+    html += `
+      <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+        <i class="fa-solid fa-users-slash" style="font-size: 32px; margin-bottom: 12px; display:block; color: var(--text-muted);"></i>
+        目前尚無任何註冊會員。
+      </div>
+    `;
+    container.innerHTML = html;
+    return;
+  }
+
+  html += `
+    <div class="admin-table-wrapper">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>頭像</th>
+            <th>用戶名稱</th>
+            <th>帳號名稱 (Handle)</th>
+            <th>電子信箱 Email</th>
+            <th>角色/狀態</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  users.forEach((u) => {
+    const avatar = u.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100';
+    html += `
+      <tr>
+        <td><img src="${avatar}" class="admin-avatar" alt="avatar"></td>
+        <td style="font-weight: 600;">${escapeHTML(u.username)}</td>
+        <td><span style="color: var(--tag-text);">${escapeHTML(u.handle)}</span></td>
+        <td>${escapeHTML(u.email)}</td>
+        <td><span class="admin-badge admin-badge-user">一般會員</span></td>
+        <td>
+          <button class="admin-btn-delete" data-email="${u.email}">刪除用戶</button>
+        </td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  container.innerHTML = html;
+
+  // 綁定刪除按鈕
+  container.querySelectorAll('.admin-btn-delete').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const email = e.currentTarget.getAttribute('data-email');
+      if (confirm(`確定要刪除此用戶 (${email}) 嗎？此操作將會清除該用戶註冊資料且無法復原。`)) {
+        deleteAdminUser(email);
+      }
+    });
+  });
+}
+
+function deleteAdminUser(email) {
+  let users = JSON.parse(localStorage.getItem('aurawall_users') || '[]');
+  users = users.filter(u => u.email !== email);
+  localStorage.setItem('aurawall_users', JSON.stringify(users));
+  
+  // 透過 Broadcast/storage 同步到其他分頁
+  localStorage.setItem('aurawall_users_sync_trigger', Date.now());
+  
+  showToast(`已成功刪除用戶: ${email}`);
+  renderAdminDashboard();
+}
+
+function renderAdminPosts(container) {
+  let html = `
+    <h3 style="font-size: 18px; font-weight:600; margin-bottom: 4px; color: var(--text-main);"><i class="fa-solid fa-clipboard-list"></i> 貼文內容審查</h3>
+    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">平台所有動態貼文列表。管理員可以審查內容，並下架/刪除不當或違規的貼文。</p>
+  `;
+
+  if (posts.length === 0) {
+    html += `
+      <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+        <i class="fa-solid fa-message" style="font-size: 32px; margin-bottom: 12px; display:block; color: var(--text-muted);"></i>
+        目前尚無任何貼文。
+      </div>
+    `;
+    container.innerHTML = html;
+    return;
+  }
+
+  html += `
+    <div class="admin-table-wrapper">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>作者</th>
+            <th>貼文內容</th>
+            <th>按讚數</th>
+            <th>留言數</th>
+            <th>發布時間</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  posts.forEach((p) => {
+    const contentPreview = p.content ? (p.content.length > 30 ? p.content.slice(0, 30) + '...' : p.content) : '(無文字內容)';
+    const dateStr = p.timestamp ? new Date(p.timestamp).toLocaleString() : '未知';
+    const authorName = p.authorName || '未命名';
+    const authorHandle = p.authorHandle || '';
+    
+    html += `
+      <tr>
+        <td>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <img src="${p.authorAvatar}" class="admin-avatar" style="width:28px;height:28px;" alt="avatar">
+            <div>
+              <div style="font-weight:600; font-size:13px;">${escapeHTML(authorName)}</div>
+              <div style="color:var(--text-muted); font-size:11px;">${escapeHTML(authorHandle)}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div style="max-width:260px; word-break:break-all;">
+            ${escapeHTML(contentPreview)}
+            ${p.image ? ` <i class="fa-solid fa-image" style="color:var(--tag-text);" title="附帶圖片"></i>` : ''}
+          </div>
+        </td>
+        <td style="font-weight:600;">${p.likes || 0}</td>
+        <td>${p.comments ? p.comments.length : 0}</td>
+        <td style="font-size:12px; color:var(--text-muted);">${dateStr}</td>
+        <td>
+          <button class="admin-btn-delete" data-post-id="${p.id}">刪除貼文</button>
+        </td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  container.innerHTML = html;
+
+  // 綁定刪除按鈕
+  container.querySelectorAll('.admin-btn-delete').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const postId = e.currentTarget.getAttribute('data-post-id');
+      if (confirm('確定要下架並刪除此貼文嗎？此操作將無法復原。')) {
+        deleteAdminPost(postId);
+      }
+    });
+  });
+}
+
+function deleteAdminPost(postId) {
+  posts = posts.filter(p => p.id !== postId);
+  persistPosts();
+  
+  showToast(`已下架並刪除貼文`);
+  renderAdminDashboard();
+}
+
+function renderAdminMaintenance(container) {
+  let html = `
+    <h3 style="font-size: 18px; font-weight:600; margin-bottom: 4px; color: var(--text-main);"><i class="fa-solid fa-screwdriver-wrench"></i> 系統維護中心</h3>
+    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">管理員專屬的一鍵系統重置與維護工具，能協助您快速建置展示環境或清空資料。</p>
+    
+    <div class="admin-maintenance-row">
+      <div class="admin-maintenance-item">
+        <div class="admin-maintenance-info">
+          <h4>重置系統為出廠預設資料</h4>
+          <p>此動作將會清除所有使用者自行發佈的貼文、註冊的帳號，並重新產生精選的示範貼文與預設系統帳號。</p>
+        </div>
+        <button class="admin-btn-action admin-btn-warning" id="btn-admin-reset">重置系統</button>
+      </div>
+
+      <div class="admin-maintenance-item">
+        <div class="admin-maintenance-info">
+          <h4>產生 10 筆隨機測試貼文</h4>
+          <p>立即在動態牆產生 10 筆由不同 AI 用戶發佈的測試內容，用於展示大數據量或捲動加載的視覺效果。</p>
+        </div>
+        <button class="admin-btn-action" id="btn-admin-gen10">產生 10 筆貼文</button>
+      </div>
+
+      <div class="admin-maintenance-item">
+        <div class="admin-maintenance-info">
+          <h4>清除所有平台貼文</h4>
+          <p>一鍵清除動態牆上的所有貼文，使整個動態牆呈現完全清空之狀態以供全新撰寫。</p>
+        </div>
+        <button class="admin-btn-action admin-btn-danger" id="btn-admin-clear-all">清除所有貼文</button>
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+
+  // 綁定按鈕事件
+  document.getElementById('btn-admin-reset').addEventListener('click', () => {
+    if (confirm('確定要將系統重置為出廠預設資料嗎？這將刪除所有自行新增的貼文與註冊用戶。')) {
+      localStorage.removeItem('aurawall_posts');
+      localStorage.removeItem('aurawall_users');
+      posts = [];
+      loadSavedPosts();
+      ensureManyPosts();
+      persistPosts();
+      showToast('系統已重置為出廠預設資料');
+      renderAdminDashboard();
+    }
+  });
+
+  document.getElementById('btn-admin-gen10').addEventListener('click', () => {
+    const originalLength = posts.length;
+    const testUsers = [
+      { name: "愛貓旅行家", handle: "@cat_traveler", avatar: "https://i.pinimg.com/736x/b6/c2/35/b6c23505a33a6674c1ecd418615ed257.jpg" },
+      { name: "美食探店王", handle: "@foodie_king", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" },
+      { name: "健身教練 Leon", handle: "@leon_workout", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100" }
+    ];
+    
+    for (let i = 1; i <= 10; i++) {
+      const u = testUsers[Math.floor(Math.random() * testUsers.length)];
+      const idx = originalLength + i;
+      const newPost = {
+        id: `test-gen-${Date.now()}-${idx}`,
+        authorName: u.name,
+        authorHandle: u.handle,
+        authorAvatar: u.avatar,
+        content: `這是後台系統生成的測試貼文 #${idx}。今天天氣晴朗，最適合分享各種生活隨想與美學靈感！✨ #Testing #Admin`,
+        image: null,
+        timestamp: new Date(Date.now() - i * 600000).toISOString(),
+        likes: Math.floor(Math.random() * 150),
+        isLiked: false,
+        isBookmarked: false,
+        comments: [],
+        tags: ["Testing", "Admin"]
+      };
+      posts.unshift(newPost);
+    }
+    persistPosts();
+    showToast('已成功生成 10 則測試貼文！');
+    renderAdminDashboard();
+  });
+
+  document.getElementById('btn-admin-clear-all').addEventListener('click', () => {
+    if (confirm('確定要清空平台上的所有貼文嗎？')) {
+      posts = [];
+      persistPosts();
+      showToast('已清空平台上的所有貼文');
+      renderAdminDashboard();
+    }
+  });
+}
+
+function escapeHTML(str) {
+  if (!str) return '';
+  return str.replace(/[&<>"']/g, function(m) {
+    switch (m) {
+      case '&': return '&amp;';
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '"': return '&quot;';
+      case "'": return '&#039;';
+      default: return m;
+    }
+  });
+}
