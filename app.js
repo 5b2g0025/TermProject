@@ -665,6 +665,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadSavedPosts();
   loadUsersRealtime();
   ensureManyPosts();
+  updateFirestoreAvatars();
   updateAuthUI();
 
   if (isDevAdminMode) {
@@ -3853,4 +3854,42 @@ function renderPresetGIFs() {
     });
     grid.appendChild(img);
   });
+}
+
+function updateFirestoreAvatars() {
+  const avatarMap = {
+    "@code_art": "https://www.ls-design.com.tw/UserFiles/kindeditor/image/20191121/img-1573540369-29739@900.jpg",
+    "@film_notes": "https://collections.culture.tw/ShowGalImage.aspx?SYSUID=26&IMG=5MK85TMRK2MQMG0OMLM4MMMJMKMAMB5NM8M6MF0OMX5G5309KX59M7M1MQMWM6M1MH5353KHMI0BMDMIKN5EKKMM090IMHKDKC55KHKKMZ080OMI095EKMK6KL5E5UMBKGK2K8KBKMK5KJMWMRKAKPM65RKX5301MAMI0ZMD0WMAMZ0IM40O0WMB&TEXT=K7KG575Y&FROM=5YKK57",
+    "@veggie_kitchen": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSP8ebClCpS-BYL01u1t1qVMUwqvD7PWvzBuw&s"
+  };
+
+  // 1. Update posts collection
+  db.collection('posts').get().then((snapshot) => {
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.authorHandle && avatarMap[data.authorHandle]) {
+        const newAvatar = avatarMap[data.authorHandle];
+        if (data.authorAvatar !== newAvatar) {
+          db.collection('posts').doc(doc.id).update({
+            authorAvatar: newAvatar
+          }).catch(err => console.error("Error updating post avatar:", err));
+        }
+      }
+    });
+  }).catch(err => console.error("Error getting posts for avatar update:", err));
+
+  // 2. Update users collection
+  db.collection('users').get().then((snapshot) => {
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.handle && avatarMap[data.handle]) {
+        const newAvatar = avatarMap[data.handle];
+        if (data.avatar !== newAvatar) {
+          db.collection('users').doc(doc.id).update({
+            avatar: newAvatar
+          }).catch(err => console.error("Error updating user avatar:", err));
+        }
+      }
+    });
+  }).catch(err => console.error("Error getting users for avatar update:", err));
 }
