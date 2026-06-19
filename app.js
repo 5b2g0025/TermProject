@@ -936,12 +936,30 @@ function initEventListeners() {
   }
   if (elements.btnLoginGoogle) {
     elements.btnLoginGoogle.addEventListener('click', () => {
-      window.open('google-login-mock.html', 'GoogleLogin', 'width=500,height=600,left=200,top=100');
+      let targetUrl = 'google-login-mock.html';
+      try {
+        const urlObj = new URL(window.location.href);
+        if (!urlObj.pathname.endsWith('/') && !urlObj.pathname.endsWith('.html')) {
+          targetUrl = urlObj.origin + urlObj.pathname + '/' + targetUrl;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      window.open(targetUrl, 'GoogleLogin', 'width=500,height=600,left=200,top=100');
     });
   }
   if (elements.btnLoginFacebook) {
     elements.btnLoginFacebook.addEventListener('click', () => {
-      window.open('facebook-login-mock.html', 'FacebookLogin', 'width=500,height=600,left=200,top=100');
+      let targetUrl = 'facebook-login-mock.html';
+      try {
+        const urlObj = new URL(window.location.href);
+        if (!urlObj.pathname.endsWith('/') && !urlObj.pathname.endsWith('.html')) {
+          targetUrl = urlObj.origin + urlObj.pathname + '/' + targetUrl;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      window.open(targetUrl, 'FacebookLogin', 'width=500,height=600,left=200,top=100');
     });
   }
 
