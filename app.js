@@ -3246,7 +3246,7 @@ function renderChatMainRoom() {
           <button type="button" class="btn-close-chat-gif" id="btn-close-chat-gif"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="chat-gif-search-container">
-          <input type="text" placeholder="搜尋 GIPHY..." class="chat-gif-search-input" id="chat-gif-search-field">
+          <input type="text" placeholder="搜尋梗圖倉庫..." class="chat-gif-search-input" id="chat-gif-search-field">
           <i class="fa-solid fa-magnifying-glass chat-gif-search-icon"></i>
         </div>
         <div class="chat-gif-grid" id="chat-gif-grid"></div>
@@ -3694,6 +3694,22 @@ function initChatEmojiPicker() {
   });
 }
 
+let localMemesCached = null;
+
+async function loadLocalMemes() {
+  if (localMemesCached) return localMemesCached;
+  try {
+    const res = await fetch('memes_db.json');
+    if (res.ok) {
+      localMemesCached = await res.json();
+      return localMemesCached;
+    }
+  } catch (e) {
+    console.warn("Failed to load local memes database:", e);
+  }
+  return [];
+}
+
 // Preset animated GIFs from memes.tw
 const PRESET_GIFS = [
   "https://memeprod.ap-south-1.linodeobjects.com/user-gif-thumbnail/4b34911ea8094681399225453cae56cb.gif",
@@ -3716,6 +3732,25 @@ async function fetchGIFs(query = '') {
   
   grid.innerHTML = '<div style="grid-column: span 2; text-align: center; font-size: 11px; color: var(--text-muted); padding: 20px;">載入中...</div>';
   
+  // 1. Load from local database first to ensure instant results
+  const localMemes = await loadLocalMemes();
+  let filteredLocal = [];
+  
+  if (query.trim()) {
+    const q = query.trim().toLowerCase();
+    filteredLocal = localMemes.filter(item => 
+      (item.title && item.title.toLowerCase().includes(q)) || 
+      (item.tag && item.tag.toLowerCase().includes(q))
+    );
+  } else {
+    // Show trending/popular ones when no query
+    filteredLocal = localMemes.filter(item => item.tag === '熱門');
+    if (filteredLocal.length === 0) {
+      filteredLocal = localMemes.slice(0, 48);
+    }
+  }
+  
+  // 2. Concurrently try to scrape fresh results from memes.tw via proxies
   const targetUrl = query.trim() 
     ? `https://memes.tw/gif?q=${encodeURIComponent(query)}`
     : `https://memes.tw/gif`;
@@ -3744,38 +3779,35 @@ async function fetchGIFs(query = '') {
     }
   }
   
-  try {
-    if (!htmlContent) {
-      throw new Error("All proxies failed to fetch content");
-    }
-    
-    // Extract GIF URLs from the HTML
+  let combinedGifs = [];
+  if (htmlContent) {
     const matches = htmlContent.match(/https:\/\/memeprod\.[^"\s']+\.gif/g) || [];
-    const gifs = [...new Set(matches)];
-    
-    grid.innerHTML = '';
-    if (gifs.length === 0) {
-      grid.innerHTML = '<div style="grid-column: span 2; text-align: center; font-size: 11px; color: var(--text-muted); padding: 20px;">找不到相關 GIF</div>';
-      return;
-    }
-    
-    gifs.forEach(url => {
-      const img = document.createElement('img');
-      img.className = 'chat-gif-item';
-      img.src = url;
-      img.alt = "Meme GIF";
-      img.loading = "lazy";
-      img.addEventListener('click', () => {
-        sendChatMainMessage('[GIF]', url);
-        const picker = document.getElementById('chat-gif-picker');
-        if (picker) picker.style.display = 'none';
-      });
-      grid.appendChild(img);
-    });
-  } catch (err) {
-    console.warn("Failed to scrape memes.tw, falling back to presets:", err);
-    renderPresetGIFs();
+    combinedGifs = [...new Set(matches)];
   }
+  
+  // Merge results, prioritizing scraped live ones, and appending local ones
+  const localUrls = filteredLocal.map(item => item.url);
+  let finalGifs = [...new Set([...combinedGifs, ...localUrls])];
+  
+  grid.innerHTML = '';
+  if (finalGifs.length === 0) {
+    grid.innerHTML = '<div style="grid-column: span 2; text-align: center; font-size: 11px; color: var(--text-muted); padding: 20px;">找不到相關 GIF</div>';
+    return;
+  }
+  
+  finalGifs.slice(0, 80).forEach(url => {
+    const img = document.createElement('img');
+    img.className = 'chat-gif-item';
+    img.src = url;
+    img.alt = "Meme GIF";
+    img.loading = "lazy";
+    img.addEventListener('click', () => {
+      sendChatMainMessage('[GIF]', url);
+      const picker = document.getElementById('chat-gif-picker');
+      if (picker) picker.style.display = 'none';
+    });
+    grid.appendChild(img);
+  });
 }
 
 function renderPresetGIFs() {
