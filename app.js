@@ -59,7 +59,7 @@ const INITIAL_POSTS_DATA = [
     id: "post-2",
     authorName: "程式碼藝術家",
     authorHandle: "@code_art",
-    authorAvatar: "https://images.unsplash.com/photo-1628157582853-a796fa650a6a?w=120",
+    authorAvatar: "https://www.ls-design.com.tw/UserFiles/kindeditor/image/20191121/img-1573540369-29739@900.jpg",
     content: "寫程式就像是在畫布上編織邏輯之美。這款全新的玻璃擬態（Glassmorphism）介面真的讓人愛不釋手！用 CSS backdrop-filter 做出來的效果簡直驚艷 🖥️ #Coding #WebDev #UIUX",
     image: null,
     timestamp: new Date(Date.now() - 3600000 * 3).toISOString(),
@@ -283,7 +283,7 @@ const INITIAL_POSTS_DATA = [
     id: "post-16",
     authorName: "電影筆記",
     authorHandle: "@film_notes",
-    authorAvatar: "https://images.unsplash.com/photo-1502136969935-8d6f0d2a8e27?w=120",
+    authorAvatar: "https://collections.culture.tw/ShowGalImage.aspx?SYSUID=26&IMG=5MK85TMRK2MQMG0OMLM4MMMJMKMAMB5NM8M6MF0OMX5G5309KX59M7M1MQMWM6M1MH5353KHMI0BMDMIKN5EKKMM090IMHKDKC55KHKKMZ080OMI095EKMK6KL5E5UMBKGK2K8KBKMK5KJMWMRKAKPM65RKX5301MAMI0ZMD0WMAMZ0IM40O0WMB&TEXT=K7KG575Y&FROM=5YKK57",
     content: "剛看完一部獨立電影，畫面與配樂都讓人難忘，推薦大家找時間觀賞並與朋友討論感受。#Film #Indie",
     image: null,
     timestamp: new Date(Date.now() - 3600000 * 34).toISOString(),
@@ -312,7 +312,7 @@ const INITIAL_POSTS_DATA = [
     id: "post-18",
     authorName: "素食廚房",
     authorHandle: "@veggie_kitchen",
-    authorAvatar: "https://images.unsplash.com/photo-1523986371872-9d3ba2e2f642?w=120",
+    authorAvatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSP8ebClCpS-BYL01u1t1qVMUwqvD7PWvzBuw&s",
     content: "嘗試了新款鷹嘴豆泥佐烤蔬菜，簡單又營養，適合夏天料理分享。#Vegan #Recipe",
     image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800",
     timestamp: new Date(Date.now() - 3600000 * 5).toISOString(),
@@ -593,7 +593,7 @@ const elements = {
   btnCloseFollowersModal: document.getElementById('btn-close-followers-modal'),
   followersModalBody: document.getElementById('followers-modal-body'),
   loginRequiredModal: document.getElementById('login-required-modal'),
-  
+
   btnCloseLoginRequired: document.getElementById('btn-close-login-required'),
   btnLoginRequiredCancel: document.getElementById('btn-login-required-cancel'),
   btnOpenAuthFromLoginRequired: document.getElementById('btn-open-auth-from-login-required'),
@@ -619,24 +619,24 @@ const elements = {
   postCreatorAvatar: document.getElementById('post-creator-avatar')
 };
 
-  // 全域小型浮動 popup 控制輔助函式（含 ARIA 與 focus 管理）
-  function openPopup(popupEl, focusEl) {
-    if (!popupEl) return;
-    popupEl.style.display = 'block';
-    popupEl.setAttribute('aria-hidden', 'false');
-    setTimeout(() => {
-      try {
-        const target = focusEl || popupEl.querySelector('input, button, [tabindex]:not([tabindex="-1"])');
-        if (target) target.focus();
-      } catch (e) {}
-    }, 10);
-  }
+// 全域小型浮動 popup 控制輔助函式（含 ARIA 與 focus 管理）
+function openPopup(popupEl, focusEl) {
+  if (!popupEl) return;
+  popupEl.style.display = 'block';
+  popupEl.setAttribute('aria-hidden', 'false');
+  setTimeout(() => {
+    try {
+      const target = focusEl || popupEl.querySelector('input, button, [tabindex]:not([tabindex="-1"])');
+      if (target) target.focus();
+    } catch (e) { }
+  }, 10);
+}
 
-  function closePopup(popupEl) {
-    if (!popupEl) return;
-    popupEl.style.display = 'none';
-    popupEl.setAttribute('aria-hidden', 'true');
-  }
+function closePopup(popupEl) {
+  if (!popupEl) return;
+  popupEl.style.display = 'none';
+  popupEl.setAttribute('aria-hidden', 'true');
+}
 
 // ==========================================
 // 3. INITIALIZATION (初始化啟動)
@@ -735,7 +735,7 @@ let postsListener = null;
 let isSeeding = false;
 function loadSavedPosts() {
   if (postsListener) return;
-  
+
   postsListener = db.collection('posts').orderBy('timestamp', 'desc').onSnapshot((snapshot) => {
     // If empty and never seeded, seed initial posts from INITIAL_POSTS_DATA
     if (snapshot.empty && !isSeeding && !localStorage.getItem('aurawall_seeded')) {
@@ -758,25 +758,25 @@ function loadSavedPosts() {
       });
       return;
     }
-    
+
     const fetchedPosts = [];
     let hasNewPosts = false;
     snapshot.forEach((doc) => {
       fetchedPosts.push({ id: doc.id, ...doc.data() });
     });
-    
+
     // Check if new posts were added (for toast notification)
     if (posts.length > 0 && fetchedPosts.length > posts.length) {
       hasNewPosts = true;
     }
-    
+
     posts = fetchedPosts;
     renderApp();
-    
+
     if (hasNewPosts) {
       showToast(`🆕 有新貼文發佈！`);
     }
-    
+
     if (currentMenuTab === 'admin') {
       renderAdminDashboard();
     }
@@ -1121,17 +1121,17 @@ function initEventListeners() {
     // 監聽 Ctrl + Shift + Alt + L
     const isKeyL = (e.key === 'L' || e.key === 'l' || e.code === 'KeyL' || e.keyCode === 76);
     const triggerModifiers = e.ctrlKey && e.shiftKey && e.altKey;
-    
+
     if (triggerModifiers && isKeyL) {
       e.preventDefault();
-      
+
       // 要求輸入數字密碼
       const password = prompt("請輸入進入管理後台的數字密碼：");
       if (password !== "888888") {
         showToast("❌ 密碼錯誤，拒絕進入後台！");
         return;
       }
-      
+
       // 模擬管理員資料
       const adminUser = {
         username: "管理員 Admin",
@@ -1140,18 +1140,18 @@ function initEventListeners() {
         email: "admin@aurawall.com",
         provider: 'local'
       };
-      
+
       // 強制寫入全域狀態與 LocalStorage
       currentUser = adminUser;
       localStorage.setItem('aurawall_logged_in_user', JSON.stringify(adminUser));
-      
+
       // 更新 UI 狀態，防禦任何 DOM 找不到導致的例外中斷
       try {
         updateAuthUI();
       } catch (err) {
         console.warn("updateAuthUI encountered an issue but proceeding: ", err);
       }
-      
+
       // 強制確保後台選單按鈕顯示與狀態高亮
       if (elements.menuAdmin) {
         elements.menuAdmin.style.display = 'flex';
@@ -1160,7 +1160,7 @@ function initEventListeners() {
       if (elements.menuFeed) elements.menuFeed.classList.remove('active');
       if (elements.menuBookmarks) elements.menuBookmarks.classList.remove('active');
       if (elements.menuAbout) elements.menuAbout.classList.remove('active');
-      
+
       // 強制切換頁面內容至後台分頁
       try {
         switchMenu('admin');
@@ -1172,7 +1172,7 @@ function initEventListeners() {
         if (elements.feedSubtitle) elements.feedSubtitle.textContent = "數據分析、用戶權限與內容審查中心";
         renderPosts();
       }
-      
+
       showToast("⚡ 已啟用開發者捷徑：已驗證密碼並以管理員身分登入！");
     }
   });
@@ -1712,11 +1712,11 @@ function updateStatsCounter() {
     if (elements.profileBookmarksCount) elements.profileBookmarksCount.textContent = '0';
   } else {
     const myPostsCount = posts.filter(p => p.authorHandle === currentUser.handle).length;
-    const followCount  = Array.isArray(currentUser.following) ? currentUser.following.length : 0;
+    const followCount = Array.isArray(currentUser.following) ? currentUser.following.length : 0;
     const followerCount = getMyFollowerCount();
 
-    if (elements.profilePostsCount)    elements.profilePostsCount.textContent    = myPostsCount;
-    if (elements.profileLikesCount)    elements.profileLikesCount.textContent    = followerCount;  // 粉絲數
+    if (elements.profilePostsCount) elements.profilePostsCount.textContent = myPostsCount;
+    if (elements.profileLikesCount) elements.profileLikesCount.textContent = followerCount;  // 粉絲數
     if (elements.profileBookmarksCount) elements.profileBookmarksCount.textContent = followCount;   // 追蹤數
   }
 
@@ -1835,7 +1835,7 @@ function updateAuthUI() {
                 elements.profileDisplayHandle.textContent = currentUser.handle;
               }
               if (elements.postCreatorAvatar) elements.postCreatorAvatar.src = currentUser.avatar;
-              
+
               if (currentUser.themeColor) {
                 localStorage.setItem('aurawall_accent_color', currentUser.themeColor);
                 applyAccentColor(currentUser.themeColor);
@@ -1924,7 +1924,7 @@ function syncCurrentUserPosts(handle, username, avatar) {
 // -----------------------------
 // Profile Edit Modal Actions
 // -----------------------------
-const PROFILE_COLOR_OPTIONS = ['#6366f1','#06b6d4','#ff7e40','#f97316','#10b981','#ef4444','#f59e0b','#8b5cf6'];
+const PROFILE_COLOR_OPTIONS = ['#6366f1', '#06b6d4', '#ff7e40', '#f97316', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6'];
 
 function openProfileEditModal() {
   // 若未登入，先顯示請登入提示
@@ -2038,7 +2038,7 @@ function renderFollowingModal() {
   followingList.forEach(handle => {
     const dbUser = allUsers.find(u => u.handle === handle);
     const mockUser = RECOMMENDED_USERS.find(u => u.handle === handle);
-    
+
     const displayName = dbUser ? dbUser.username : (mockUser ? mockUser.name : handle.replace('@', ''));
     const displayAvatar = dbUser ? dbUser.avatar : (mockUser ? mockUser.avatar : getFallbackAvatar(handle));
     const displayBio = dbUser ? (dbUser.bio || '探索宇宙的冒險者 🚀') : (mockUser ? mockUser.bio : '已追蹤的創作者');
@@ -2102,7 +2102,7 @@ function renderFollowersModal() {
 
     const item = document.createElement('div');
     item.className = 'following-list-item';
-    
+
     const avatarSrc = user.avatar || getFallbackAvatar(user.handle);
     const bioText = user.bio || '探索宇宙的冒險者 🚀';
 
@@ -2302,7 +2302,7 @@ function closeModal(modalEl) {
     modalEl.setAttribute('aria-hidden', 'true');
     modalEl.classList.remove('closing');
     // restore focus
-    if (modalEl.__lastFocused) try { modalEl.__lastFocused.focus(); } catch (e) {}
+    if (modalEl.__lastFocused) try { modalEl.__lastFocused.focus(); } catch (e) { }
     modalEl.removeEventListener('transitionend', cleanup);
   };
   // wait for CSS transition (match .modal-content transition)
@@ -2659,7 +2659,7 @@ function renderAdminDashboard() {
   const users = allUsers;
   const totalPosts = posts.length;
   const totalLikes = posts.reduce((sum, p) => sum + (p.likes || 0), 0);
-  
+
   const postsFeed = elements.postsFeed;
   if (!postsFeed) return;
 
@@ -2747,7 +2747,7 @@ function renderAdminDashboard() {
 
 function renderAdminUsers(container) {
   const users = allUsers;
-  
+
   let html = `
     <h3 style="font-size: 18px; font-weight:600; margin-bottom: 4px; color: var(--text-main);"><i class="fa-solid fa-user-shield"></i> 註冊用戶名單</h3>
     <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">列出目前系統中所有註冊的本地會員帳號。管理員可以審查會員狀態或刪除違規帳號。</p>
@@ -2869,7 +2869,7 @@ function renderAdminPosts(container) {
     const dateStr = p.timestamp ? new Date(p.timestamp).toLocaleString() : '未知';
     const authorName = p.authorName || '未命名';
     const authorHandle = p.authorHandle || '';
-    
+
     html += `
       <tr>
         <td>
@@ -2967,7 +2967,7 @@ function renderAdminMaintenance(container) {
       try {
         showToast("正在重置系統資料...");
         localStorage.removeItem('aurawall_seeded');
-        
+
         // Delete all posts
         const postsSnapshot = await db.collection('posts').get();
         const postDeletePromises = [];
@@ -2975,7 +2975,7 @@ function renderAdminMaintenance(container) {
           postDeletePromises.push(doc.ref.delete());
         });
         await Promise.all(postDeletePromises);
-        
+
         // Delete all users
         const usersSnapshot = await db.collection('users').get();
         const userDeletePromises = [];
@@ -2983,7 +2983,7 @@ function renderAdminMaintenance(container) {
           userDeletePromises.push(doc.ref.delete());
         });
         await Promise.all(userDeletePromises);
-        
+
         showToast('系統已重置為出廠預設資料');
       } catch (err) {
         console.error("Reset system error:", err);
@@ -2999,7 +2999,7 @@ function renderAdminMaintenance(container) {
       { name: "美食探店王", handle: "@foodie_king", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" },
       { name: "健身教練 Leon", handle: "@leon_workout", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100" }
     ];
-    
+
     const batch = db.batch();
     for (let i = 1; i <= 10; i++) {
       const u = testUsers[Math.floor(Math.random() * testUsers.length)];
@@ -3022,7 +3022,7 @@ function renderAdminMaintenance(container) {
       const docRef = db.collection('posts').doc(newPostId);
       batch.set(docRef, newPost);
     }
-    
+
     batch.commit()
       .then(() => {
         showToast('已成功生成 10 則測試貼文！');
@@ -3053,7 +3053,7 @@ function renderAdminMaintenance(container) {
 
 function escapeHTML(str) {
   if (!str) return '';
-  return str.replace(/[&<>"']/g, function(m) {
+  return str.replace(/[&<>"']/g, function (m) {
     switch (m) {
       case '&': return '&amp;';
       case '<': return '&lt;';
@@ -3110,12 +3110,12 @@ function renderChatMainPage() {
 function renderChatMainUsersList() {
   const usersListEl = document.getElementById('chat-main-users-list');
   if (!usersListEl) return;
-  
+
   usersListEl.innerHTML = '';
-  
+
   // Filter out current logged-in user
   const contacts = allUsers.filter(u => u.handle !== currentUser.handle);
-  
+
   if (contacts.length === 0) {
     usersListEl.innerHTML = `
       <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px;">
@@ -3127,19 +3127,19 @@ function renderChatMainUsersList() {
 
   // 分成可私訊與不可私訊兩組
   const allowed = contacts.filter(u => canDMUser(u.handle));
-  const locked  = contacts.filter(u => !canDMUser(u.handle));
+  const locked = contacts.filter(u => !canDMUser(u.handle));
 
   function buildItem(user, isLocked) {
     const item = document.createElement('div');
     const isActive = currentChatMainTarget && currentChatMainTarget.handle === user.handle;
     item.className = `chat-user-item ${isActive ? 'active' : ''} ${isLocked ? 'locked-item' : ''}`;
     item.style.opacity = isLocked ? '0.7' : '1';
-    item.style.cursor  = 'pointer';
-    
+    item.style.cursor = 'pointer';
+
     const avatarSrc = user.avatar || getFallbackAvatar(user.handle);
     const count = unreadCounts[user.handle] || 0;
     const badgeHtml = count > 0 ? `<span class="chat-unread-badge">${count}</span>` : '';
-    
+
     item.innerHTML = `
       <img src="${avatarSrc}" alt="avatar" class="chat-user-item-avatar">
       <div class="chat-user-item-info">
@@ -3151,11 +3151,11 @@ function renderChatMainUsersList() {
         ${isLocked ? '<span style="font-size:10px;color:var(--text-muted);">🔒 需要互追才能私訊</span>' : '<span style="font-size:10px;color:var(--tag-text);">💬 可以私訊</span>'}
       </div>
     `;
-    
+
     item.addEventListener('click', () => {
       selectChatMainTarget(user);
     });
-    
+
     usersListEl.appendChild(item);
   }
 
@@ -3177,7 +3177,7 @@ function renderChatMainUsersList() {
 function renderChatMainRoom() {
   const roomPaneEl = document.getElementById('chat-main-room-pane');
   if (!roomPaneEl) return;
-  
+
   if (!currentChatMainTarget) {
     roomPaneEl.innerHTML = `
       <div class="chat-room-empty">
@@ -3188,7 +3188,7 @@ function renderChatMainRoom() {
     `;
     return;
   }
-  
+
   const avatarSrc = currentChatMainTarget.avatar || getFallbackAvatar(currentChatMainTarget.handle);
   const alreadyFollowing = isFollowing(currentChatMainTarget.handle);
   const isDMAllowed = canDMUser(currentChatMainTarget.handle);
@@ -3255,7 +3255,7 @@ function renderChatMainRoom() {
       </form>
     </div>
   `;
-  
+
   // ── 追蹤 / 取消追蹤按鈕 ──────────────────────────────
   const followToggleBtn = document.getElementById('btn-chat-follow-toggle');
   if (followToggleBtn) {
@@ -3278,7 +3278,7 @@ function renderChatMainRoom() {
 
     followToggleBtn.addEventListener('click', async () => {
       const targetHandle = currentChatMainTarget.handle;
-      const targetName   = currentChatMainTarget.username;
+      const targetName = currentChatMainTarget.username;
       const nowFollowing = followToggleBtn.classList.contains('following');
 
       // ── 樂觀更新 UI（先切換，再等 API 確認）──
@@ -3332,18 +3332,18 @@ function renderChatMainRoom() {
       }
     });
   }
-  
+
   // Bind cancel reply button
   const cancelReplyBtn = document.getElementById('btn-chat-reply-cancel');
   if (cancelReplyBtn) {
     cancelReplyBtn.addEventListener('click', clearReplyMessage);
   }
-  
+
   // Bind Chat Emoji Trigger Button
   const emojiTriggerBtn = document.getElementById('btn-chat-emoji-trigger');
   const chatEmojiPicker = document.getElementById('chat-emoji-picker');
   const closeChatEmojiBtn = document.getElementById('btn-close-chat-emoji');
-  
+
   if (emojiTriggerBtn && chatEmojiPicker) {
     emojiTriggerBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -3356,14 +3356,14 @@ function renderChatMainRoom() {
       }
     });
   }
-  
+
   if (closeChatEmojiBtn && chatEmojiPicker) {
     closeChatEmojiBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       chatEmojiPicker.style.display = 'none';
     });
   }
-  
+
   // Close pickers when clicking anywhere else
   document.addEventListener('click', () => {
     const picker = document.getElementById('chat-emoji-picker');
@@ -3371,7 +3371,7 @@ function renderChatMainRoom() {
     const gifPicker = document.getElementById('chat-gif-picker');
     if (gifPicker) gifPicker.style.display = 'none';
   });
-  
+
   // Prevent closing when clicking inside the picker
   if (chatEmojiPicker) {
     chatEmojiPicker.addEventListener('click', (e) => {
@@ -3384,7 +3384,7 @@ function renderChatMainRoom() {
   const chatGifPicker = document.getElementById('chat-gif-picker');
   const closeChatGifBtn = document.getElementById('btn-close-chat-gif');
   const gifSearchField = document.getElementById('chat-gif-search-field');
-  
+
   if (gifTriggerBtn && chatGifPicker) {
     gifTriggerBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -3397,20 +3397,20 @@ function renderChatMainRoom() {
       }
     });
   }
-  
+
   if (closeChatGifBtn && chatGifPicker) {
     closeChatGifBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       chatGifPicker.style.display = 'none';
     });
   }
-  
+
   if (chatGifPicker) {
     chatGifPicker.addEventListener('click', (e) => {
       e.stopPropagation();
     });
   }
-  
+
   if (gifSearchField) {
     let searchTimeout = null;
     gifSearchField.addEventListener('input', () => {
@@ -3421,7 +3421,7 @@ function renderChatMainRoom() {
       }, 400);
     });
   }
-  
+
   // Start messages real-time sync for this room
   startChatMainListener();
 }
@@ -3429,41 +3429,41 @@ function renderChatMainRoom() {
 function selectChatMainTarget(user) {
   currentChatMainTarget = user;
   clearReplyMessage();
-  
+
   // Refresh contact list active status
   renderChatMainUsersList();
-  
+
   // Refresh chat room view
   renderChatMainRoom();
 }
 
 function startChatMainListener() {
   if (chatMainListener) chatMainListener(); // unsubscribe
-  
+
   const messagesBody = document.getElementById('chat-main-messages-body');
   if (!messagesBody || !currentChatMainTarget || !currentUser) return;
-  
+
   chatMainListener = db.collection('messages')
     .orderBy('timestamp', 'asc')
     .onSnapshot((snapshot) => {
       messagesBody.innerHTML = '';
       let hasMessages = false;
-      
+
       snapshot.forEach((doc) => {
         const msg = doc.data();
         const isSentByMe = msg.senderHandle === currentUser.handle && msg.receiverHandle === currentChatMainTarget.handle;
         const isReceivedByMe = msg.senderHandle === currentChatMainTarget.handle && msg.receiverHandle === currentUser.handle;
-        
+
         if (isSentByMe || isReceivedByMe) {
           hasMessages = true;
-          
+
           if (isReceivedByMe && msg.isRead !== true) {
-            db.collection('messages').doc(doc.id).update({ isRead: true }).catch(e => {});
+            db.collection('messages').doc(doc.id).update({ isRead: true }).catch(e => { });
           }
-          
+
           const row = document.createElement('div');
           row.className = `chat-message-row ${isSentByMe ? 'sent' : 'received'}`;
-          
+
           const replyBtn = document.createElement('button');
           replyBtn.className = 'chat-reply-btn';
           replyBtn.type = 'button';
@@ -3472,10 +3472,10 @@ function startChatMainListener() {
           replyBtn.addEventListener('click', () => {
             setReplyMessage(msg.senderName, msg.text);
           });
-          
+
           const bubble = document.createElement('div');
           bubble.className = `chat-bubble ${isSentByMe ? 'sent' : 'received'}`;
-          
+
           if (msg.replyToUser && msg.replyToText) {
             const quoteDiv = document.createElement('div');
             quoteDiv.className = 'chat-bubble-reply-quote';
@@ -3485,7 +3485,7 @@ function startChatMainListener() {
             `;
             bubble.appendChild(quoteDiv);
           }
-          
+
           if (msg.gif) {
             const img = document.createElement('img');
             img.src = msg.gif;
@@ -3502,7 +3502,7 @@ function startChatMainListener() {
             textSpan.textContent = msg.text;
             bubble.appendChild(textSpan);
           }
-          
+
           if (isSentByMe) {
             row.appendChild(replyBtn);
             row.appendChild(bubble);
@@ -3510,11 +3510,11 @@ function startChatMainListener() {
             row.appendChild(bubble);
             row.appendChild(replyBtn);
           }
-          
+
           messagesBody.appendChild(row);
         }
       });
-      
+
       if (!hasMessages) {
         messagesBody.innerHTML = `
           <div class="chat-empty-state">
@@ -3523,7 +3523,7 @@ function startChatMainListener() {
           </div>
         `;
       }
-      
+
       // Auto scroll to bottom
       messagesBody.scrollTop = messagesBody.scrollHeight;
     }, (err) => {
@@ -3533,7 +3533,7 @@ function startChatMainListener() {
 
 function sendChatMainMessage(text, gifUrl = null) {
   if (!currentChatMainTarget || (!text.trim() && !gifUrl) || !currentUser) return;
-  
+
   const msgObj = {
     senderHandle: currentUser.handle,
     senderName: currentUser.username,
@@ -3543,16 +3543,16 @@ function sendChatMainMessage(text, gifUrl = null) {
     timestamp: new Date().toISOString(),
     isRead: false
   };
-  
+
   if (gifUrl) {
     msgObj.gif = gifUrl;
   }
-  
+
   if (currentReplyMessage) {
     msgObj.replyToUser = currentReplyMessage.user;
     msgObj.replyToText = currentReplyMessage.text;
   }
-  
+
   db.collection('messages').add(msgObj)
     .then(() => {
       const inputField = document.getElementById('chat-main-input-field');
@@ -3570,17 +3570,17 @@ function setReplyMessage(senderName, text) {
     user: senderName,
     text: text
   };
-  
+
   const previewBar = document.getElementById('chat-main-reply-preview');
   const previewUser = document.getElementById('chat-reply-user');
   const previewText = document.getElementById('chat-reply-text');
-  
+
   if (previewBar && previewUser && previewText) {
     previewUser.textContent = senderName;
     previewText.textContent = text;
     previewBar.style.display = 'flex';
   }
-  
+
   const inputField = document.getElementById('chat-main-input-field');
   if (inputField) inputField.focus();
 }
@@ -3615,13 +3615,13 @@ function startGlobalMessagesListener() {
         const msg = doc.data();
         if (msg.receiverHandle === user.handle && msg.isRead !== true) {
           if (currentChatMainTarget && currentChatMainTarget.handle === msg.senderHandle && currentMenuTab === 'chat') {
-            db.collection('messages').doc(doc.id).update({ isRead: true }).catch(err => {});
+            db.collection('messages').doc(doc.id).update({ isRead: true }).catch(err => { });
           } else {
             unreadCounts[msg.senderHandle] = (unreadCounts[msg.senderHandle] || 0) + 1;
           }
         }
       });
-      
+
       // Update unread red dot on the sidebar "私訊聊天" menu item
       const totalUnread = Object.values(unreadCounts).reduce((sum, count) => sum + count, 0);
       const chatDot = document.getElementById('menu-chat-unread-dot');
@@ -3639,7 +3639,7 @@ function startGlobalMessagesListener() {
 
 function markMessagesAsRead(contactHandle) {
   if (!currentUser || !currentUser.handle || !contactHandle) return;
-  
+
   db.collection('messages')
     .where('senderHandle', '==', contactHandle)
     .where('receiverHandle', '==', currentUser.handle)
@@ -3659,7 +3659,7 @@ function markMessagesAsRead(contactHandle) {
 function initChatEmojiPicker() {
   const emojiGrid = document.getElementById('chat-emoji-grid');
   if (!emojiGrid) return;
-  
+
   emojiGrid.innerHTML = '';
   EMOJI_CATEGORIES.forEach(category => {
     category.emojis.forEach(emoji => {
@@ -3730,12 +3730,12 @@ function renderGifGrid(urls) {
   const grid = document.getElementById('chat-gif-grid');
   if (!grid) return;
   grid.innerHTML = '';
-  
+
   if (urls.length === 0) {
     grid.innerHTML = '<div style="grid-column: span 2; text-align: center; font-size: 11px; color: var(--text-muted); padding: 20px;">找不到相關 GIF</div>';
     return;
   }
-  
+
   urls.slice(0, 80).forEach(url => {
     const img = document.createElement('img');
     img.className = 'chat-gif-item';
@@ -3754,17 +3754,17 @@ function renderGifGrid(urls) {
 async function fetchGIFs(query = '') {
   const grid = document.getElementById('chat-gif-grid');
   if (!grid) return;
-  
+
   const sessionId = ++currentSearchSessionId;
-  
+
   // 1. Load from local database first to ensure instant results
   const localMemes = await loadLocalMemes();
   let filteredLocal = [];
-  
+
   if (query.trim()) {
     const q = query.trim().toLowerCase();
-    filteredLocal = localMemes.filter(item => 
-      (item.title && item.title.toLowerCase().includes(q)) || 
+    filteredLocal = localMemes.filter(item =>
+      (item.title && item.title.toLowerCase().includes(q)) ||
       (item.tag && item.tag.toLowerCase().includes(q))
     );
   } else {
@@ -3774,27 +3774,27 @@ async function fetchGIFs(query = '') {
       filteredLocal = localMemes.slice(0, 48);
     }
   }
-  
+
   // Fallback to presets if database didn't load and no query
   if (filteredLocal.length === 0 && !query.trim()) {
     filteredLocal = PRESET_GIFS.map(url => ({ url, title: 'Preset', tag: '熱門' }));
   }
-  
+
   // Render local results immediately
   if (sessionId === currentSearchSessionId) {
     renderGifGrid(filteredLocal.map(item => item.url));
   }
-  
+
   // 2. Concurrently try to scrape fresh results from memes.tw via proxies in the background
-  const targetUrl = query.trim() 
+  const targetUrl = query.trim()
     ? `https://memes.tw/gif?q=${encodeURIComponent(query)}`
     : `https://memes.tw/gif`;
-    
+
   const proxies = [
     `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`,
     `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
   ];
-  
+
   (async () => {
     let htmlContent = '';
     for (const proxyUrl of proxies) {
@@ -3802,10 +3802,10 @@ async function fetchGIFs(query = '') {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 4000); // 4s timeout
-        
+
         const res = await fetch(proxyUrl, { signal: controller.signal });
         clearTimeout(timeoutId);
-        
+
         if (!res.ok) continue;
         if (proxyUrl.includes('allorigins')) {
           const json = await res.json();
@@ -3820,9 +3820,9 @@ async function fetchGIFs(query = '') {
         console.warn("Proxy background fetch failed:", proxyUrl, e);
       }
     }
-    
+
     if (sessionId !== currentSearchSessionId) return;
-    
+
     if (htmlContent) {
       const matches = htmlContent.match(/https:\/\/memeprod\.[^"\s']+\.gif/g) || [];
       const scrapedUrls = [...new Set(matches)];
@@ -3838,7 +3838,7 @@ async function fetchGIFs(query = '') {
 function renderPresetGIFs() {
   const grid = document.getElementById('chat-gif-grid');
   if (!grid) return;
-  
+
   grid.innerHTML = '';
   PRESET_GIFS.forEach(url => {
     const img = document.createElement('img');
