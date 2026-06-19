@@ -3726,11 +3726,38 @@ const PRESET_GIFS = [
   "https://memeprod.ap-south-1.linodeobjects.com/user-gif-thumbnail/16f425cbea3e442b126814989dbe629c.gif"
 ];
 
+let currentSearchSessionId = 0;
+
+function renderGifGrid(urls) {
+  const grid = document.getElementById('chat-gif-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  
+  if (urls.length === 0) {
+    grid.innerHTML = '<div style="grid-column: span 2; text-align: center; font-size: 11px; color: var(--text-muted); padding: 20px;">找不到相關 GIF</div>';
+    return;
+  }
+  
+  urls.slice(0, 80).forEach(url => {
+    const img = document.createElement('img');
+    img.className = 'chat-gif-item';
+    img.src = url;
+    img.alt = "Meme GIF";
+    img.loading = "lazy";
+    img.addEventListener('click', () => {
+      sendChatMainMessage('[GIF]', url);
+      const picker = document.getElementById('chat-gif-picker');
+      if (picker) picker.style.display = 'none';
+    });
+    grid.appendChild(img);
+  });
+}
+
 async function fetchGIFs(query = '') {
   const grid = document.getElementById('chat-gif-grid');
   if (!grid) return;
   
-  grid.innerHTML = '<div style="grid-column: span 2; text-align: center; font-size: 11px; color: var(--text-muted); padding: 20px;">載入中...</div>';
+  const sessionId = ++currentSearchSessionId;
   
   // 1. Load from local database first to ensure instant results
   const localMemes = await loadLocalMemes();
@@ -3750,7 +3777,17 @@ async function fetchGIFs(query = '') {
     }
   }
   
-  // 2. Concurrently try to scrape fresh results from memes.tw via proxies
+  // Fallback to presets if database didn't load and no query
+  if (filteredLocal.length === 0 && !query.trim()) {
+    filteredLocal = PRESET_GIFS.map(url => ({ url, title: 'Preset', tag: '熱門' }));
+  }
+  
+  // Render local results immediately
+  if (sessionId === currentSearchSessionId) {
+    renderGifGrid(filteredLocal.map(item => item.url));
+  }
+  
+  // 2. Concurrently try to scrape fresh results from memes.tw via proxies in the background
   const targetUrl = query.trim() 
     ? `https://memes.tw/gif?q=${encodeURIComponent(query)}`
     : `https://memes.tw/gif`;
@@ -3760,54 +3797,44 @@ async function fetchGIFs(query = '') {
     `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
   ];
   
-  let htmlContent = '';
-  for (const proxyUrl of proxies) {
-    try {
-      const res = await fetch(proxyUrl);
-      if (!res.ok) continue;
-      if (proxyUrl.includes('allorigins')) {
-        const json = await res.json();
-        htmlContent = json.contents;
-      } else {
-        htmlContent = await res.text();
+  (async () => {
+    let htmlContent = '';
+    for (const proxyUrl of proxies) {
+      if (sessionId !== currentSearchSessionId) return;
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000); // 4s timeout
+        
+        const res = await fetch(proxyUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
+        if (!res.ok) continue;
+        if (proxyUrl.includes('allorigins')) {
+          const json = await res.json();
+          htmlContent = json.contents;
+        } else {
+          htmlContent = await res.text();
+        }
+        if (htmlContent && htmlContent.includes('memeprod')) {
+          break; // Success
+        }
+      } catch (e) {
+        console.warn("Proxy background fetch failed:", proxyUrl, e);
       }
-      if (htmlContent && htmlContent.includes('memeprod')) {
-        break; // Success
-      }
-    } catch (e) {
-      console.warn("Proxy fetch failed:", proxyUrl, e);
     }
-  }
-  
-  let combinedGifs = [];
-  if (htmlContent) {
-    const matches = htmlContent.match(/https:\/\/memeprod\.[^"\s']+\.gif/g) || [];
-    combinedGifs = [...new Set(matches)];
-  }
-  
-  // Merge results, prioritizing scraped live ones, and appending local ones
-  const localUrls = filteredLocal.map(item => item.url);
-  let finalGifs = [...new Set([...combinedGifs, ...localUrls])];
-  
-  grid.innerHTML = '';
-  if (finalGifs.length === 0) {
-    grid.innerHTML = '<div style="grid-column: span 2; text-align: center; font-size: 11px; color: var(--text-muted); padding: 20px;">找不到相關 GIF</div>';
-    return;
-  }
-  
-  finalGifs.slice(0, 80).forEach(url => {
-    const img = document.createElement('img');
-    img.className = 'chat-gif-item';
-    img.src = url;
-    img.alt = "Meme GIF";
-    img.loading = "lazy";
-    img.addEventListener('click', () => {
-      sendChatMainMessage('[GIF]', url);
-      const picker = document.getElementById('chat-gif-picker');
-      if (picker) picker.style.display = 'none';
-    });
-    grid.appendChild(img);
-  });
+    
+    if (sessionId !== currentSearchSessionId) return;
+    
+    if (htmlContent) {
+      const matches = htmlContent.match(/https:\/\/memeprod\.[^"\s']+\.gif/g) || [];
+      const scrapedUrls = [...new Set(matches)];
+      if (scrapedUrls.length > 0) {
+        const localUrls = filteredLocal.map(item => item.url);
+        const finalGifs = [...new Set([...scrapedUrls, ...localUrls])];
+        renderGifGrid(finalGifs);
+      }
+    }
+  })();
 }
 
 function renderPresetGIFs() {
