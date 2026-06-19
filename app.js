@@ -3484,7 +3484,11 @@ function startGlobalMessagesListener() {
   unreadCounts = {};
 
   const loggedInUser = localStorage.getItem('aurawall_logged_in_user');
-  if (!loggedInUser) return;
+  if (!loggedInUser) {
+    const chatDot = document.getElementById('menu-chat-unread-dot');
+    if (chatDot) chatDot.style.display = 'none';
+    return;
+  }
   const user = JSON.parse(loggedInUser);
 
   globalMessagesListener = db.collection('messages')
@@ -3500,6 +3504,14 @@ function startGlobalMessagesListener() {
           }
         }
       });
+      
+      // Update unread red dot on the sidebar "私訊聊天" menu item
+      const totalUnread = Object.values(unreadCounts).reduce((sum, count) => sum + count, 0);
+      const chatDot = document.getElementById('menu-chat-unread-dot');
+      if (chatDot) {
+        chatDot.style.display = totalUnread > 0 ? 'inline-block' : 'none';
+      }
+
       if (currentMenuTab === 'chat') {
         renderChatMainUsersList();
       }
