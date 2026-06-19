@@ -896,7 +896,9 @@ function initEventListeners() {
     elements.menuChat.addEventListener('click', () => switchMenu('chat'));
   }
   elements.menuBookmarks.addEventListener('click', () => switchMenu('bookmarks'));
-  elements.menuAbout.addEventListener('click', () => switchMenu('about'));
+  if (elements.menuAbout) {
+    elements.menuAbout.addEventListener('click', () => switchMenu('about'));
+  }
   if (elements.menuAdmin) {
     elements.menuAdmin.addEventListener('click', () => switchMenu('admin'));
   }
@@ -1198,7 +1200,7 @@ function switchMenu(tab) {
   elements.menuFeed.classList.remove('active');
   if (elements.menuChat) elements.menuChat.classList.remove('active');
   elements.menuBookmarks.classList.remove('active');
-  elements.menuAbout.classList.remove('active');
+  if (elements.menuAbout) elements.menuAbout.classList.remove('active');
   if (elements.menuAdmin) elements.menuAdmin.classList.remove('active');
 
   if (tab === 'feed') {
@@ -1217,7 +1219,7 @@ function switchMenu(tab) {
     elements.feedTitle.textContent = "我的收藏";
     elements.feedSubtitle.textContent = "你珍藏的所有美好創意與貼文";
   } else if (tab === 'about') {
-    elements.menuAbout.classList.add('active');
+    if (elements.menuAbout) elements.menuAbout.classList.add('active');
     elements.createPostArea.style.display = 'none';
     elements.feedTitle.textContent = "關於本站";
     elements.feedSubtitle.textContent = "AuraWall 設計理念與系統架構";
