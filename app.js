@@ -3083,6 +3083,7 @@ function escapeHTML(str) {
 // ==========================================
 let currentChatMainTarget = null;
 let chatMainListener = null;
+let currentReplyMessage = null;
 
 function renderChatMainPage() {
   elements.postsFeed.innerHTML = `
@@ -3212,6 +3213,14 @@ function renderChatMainRoom() {
       <!-- Loaded dynamically -->
     </div>
     
+    <div class="chat-reply-preview-bar" id="chat-main-reply-preview" style="display: none;">
+      <div class="chat-reply-preview-content">
+        <i class="fa-solid fa-reply" style="font-size:12px; margin-right:6px; color: var(--tag-text);"></i>
+        <span>回覆給 <strong id="chat-reply-user"></strong>：<span id="chat-reply-text"></span></span>
+      </div>
+      <button class="chat-reply-cancel-btn" id="btn-chat-reply-cancel" type="button"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    
     <div class="chat-room-input-container">
       <form class="chat-room-input-form" id="chat-main-input-form">
         <input type="text" placeholder="${isDMAllowed ? '輸入訊息...' : '🔒 雙方至少需要有一方追蹤對方才能傳送訊息'}" class="chat-room-input" id="chat-main-input-field" required autocomplete="off" ${isDMAllowed ? '' : 'disabled'}>
@@ -3299,12 +3308,19 @@ function renderChatMainRoom() {
     });
   }
   
+  // Bind cancel reply button
+  const cancelReplyBtn = document.getElementById('btn-chat-reply-cancel');
+  if (cancelReplyBtn) {
+    cancelReplyBtn.addEventListener('click', clearReplyMessage);
+  }
+  
   // Start messages real-time sync for this room
   startChatMainListener();
 }
 
 function selectChatMainTarget(user) {
   currentChatMainTarget = user;
+  clearReplyMessage();
   
   // Refresh contact list active status
   renderChatMainUsersList();
@@ -3332,10 +3348,45 @@ function startChatMainListener() {
         
         if (isSentByMe || isReceivedByMe) {
           hasMessages = true;
+          
+          const row = document.createElement('div');
+          row.className = `chat-message-row ${isSentByMe ? 'sent' : 'received'}`;
+          
+          const replyBtn = document.createElement('button');
+          replyBtn.className = 'chat-reply-btn';
+          replyBtn.type = 'button';
+          replyBtn.title = '回覆此訊息';
+          replyBtn.innerHTML = '<i class="fa-solid fa-reply"></i>';
+          replyBtn.addEventListener('click', () => {
+            setReplyMessage(msg.senderName, msg.text);
+          });
+          
           const bubble = document.createElement('div');
           bubble.className = `chat-bubble ${isSentByMe ? 'sent' : 'received'}`;
-          bubble.textContent = msg.text;
-          messagesBody.appendChild(bubble);
+          
+          if (msg.replyToUser && msg.replyToText) {
+            const quoteDiv = document.createElement('div');
+            quoteDiv.className = 'chat-bubble-reply-quote';
+            quoteDiv.innerHTML = `
+              <div class="reply-quote-user">@${escapeHTML(msg.replyToUser)}</div>
+              <div class="reply-quote-text">${escapeHTML(msg.replyToText)}</div>
+            `;
+            bubble.appendChild(quoteDiv);
+          }
+          
+          const textSpan = document.createElement('span');
+          textSpan.textContent = msg.text;
+          bubble.appendChild(textSpan);
+          
+          if (isSentByMe) {
+            row.appendChild(replyBtn);
+            row.appendChild(bubble);
+          } else {
+            row.appendChild(bubble);
+            row.appendChild(replyBtn);
+          }
+          
+          messagesBody.appendChild(row);
         }
       });
       
@@ -3367,13 +3418,47 @@ function sendChatMainMessage(text) {
     timestamp: new Date().toISOString()
   };
   
+  if (currentReplyMessage) {
+    msgObj.replyToUser = currentReplyMessage.user;
+    msgObj.replyToText = currentReplyMessage.text;
+  }
+  
   db.collection('messages').add(msgObj)
     .then(() => {
       const inputField = document.getElementById('chat-main-input-field');
       if (inputField) inputField.value = '';
+      clearReplyMessage();
     })
     .catch((err) => {
       console.error("Error sending message in main layout:", err);
       showToast("❌ 傳送訊息失敗，請重試");
     });
+}
+
+function setReplyMessage(senderName, text) {
+  currentReplyMessage = {
+    user: senderName,
+    text: text
+  };
+  
+  const previewBar = document.getElementById('chat-main-reply-preview');
+  const previewUser = document.getElementById('chat-reply-user');
+  const previewText = document.getElementById('chat-reply-text');
+  
+  if (previewBar && previewUser && previewText) {
+    previewUser.textContent = senderName;
+    previewText.textContent = text;
+    previewBar.style.display = 'flex';
+  }
+  
+  const inputField = document.getElementById('chat-main-input-field');
+  if (inputField) inputField.focus();
+}
+
+function clearReplyMessage() {
+  currentReplyMessage = null;
+  const previewBar = document.getElementById('chat-main-reply-preview');
+  if (previewBar) {
+    previewBar.style.display = 'none';
+  }
 }

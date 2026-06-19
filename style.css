@@ -2738,6 +2738,111 @@ button[disabled] {
   border: 1px solid var(--glass-border);
 }
 
+/* Message Row & Reply Button Styles */
+.chat-message-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.chat-message-row.sent {
+  justify-content: flex-end;
+}
+.chat-message-row.received {
+  justify-content: flex-start;
+}
+.chat-reply-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s, transform 0.2s;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 14px;
+}
+.chat-message-row:hover .chat-reply-btn {
+  opacity: 0.6;
+}
+.chat-reply-btn:hover {
+  opacity: 1 !important;
+  color: var(--tag-text);
+  transform: scale(1.15);
+}
+
+/* Quoted Reply inside Chat Bubble */
+.chat-bubble-reply-quote {
+  background: rgba(255, 255, 255, 0.1);
+  border-left: 3px solid var(--tag-text);
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  font-size: 11px;
+  max-width: 100%;
+  opacity: 0.85;
+}
+.chat-bubble.received .chat-bubble-reply-quote {
+  background: rgba(0, 0, 0, 0.05);
+  border-left: 3px solid var(--tag-text);
+}
+.reply-quote-user {
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.reply-quote-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Reply Preview Bar above Input */
+.chat-reply-preview-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: var(--input-bg);
+  border-top: 1px solid var(--glass-border);
+  font-size: 12px;
+  color: var(--text-main);
+  animation: slideDown 0.2s ease;
+}
+.chat-reply-preview-content {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90%;
+}
+.chat-reply-preview-content span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chat-reply-cancel-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+.chat-reply-cancel-btn:hover {
+  color: #ef4444;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .chat-input-area {
   padding: 12px;
   border-top: 1px solid var(--glass-border);
