@@ -224,7 +224,7 @@ textarea {
 
 /* Profile Card */
 .profile-card {
-  padding: 24px;
+  padding: 20px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -314,16 +314,20 @@ textarea {
 }
 
 .profile-handle {
+  display: block;
   font-size: 13px;
   color: var(--text-muted);
-  margin-bottom: 16px;
+  margin-bottom: 4px;
+}
+.profile-handle:empty {
+  display: none;
 }
 
 .profile-stats {
   display: flex;
   justify-content: space-around;
   width: 100%;
-  padding-top: 16px;
+  padding-top: 6px;
   border-top: 1px solid var(--glass-border);
 }
 
@@ -344,7 +348,7 @@ textarea {
   font-size: 10px;
   color: var(--text-main);
   opacity: 0.85;
-  margin-top: 4px;
+  margin-top: 1px;
 }
 
 .stat-clickable {
