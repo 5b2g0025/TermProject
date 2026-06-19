@@ -3229,9 +3229,21 @@ function renderChatMainRoom() {
       <button class="chat-reply-cancel-btn" id="btn-chat-reply-cancel" type="button"><i class="fa-solid fa-xmark"></i></button>
     </div>
     
-    <div class="chat-room-input-container">
+    <div class="chat-room-input-container" style="position: relative;">
+      <!-- Chat Emoji Picker Popup -->
+      <div class="chat-emoji-picker-popup" id="chat-emoji-picker" style="display: none;">
+        <div class="chat-emoji-picker-header">
+          <span>選擇表情符號</span>
+          <button type="button" class="btn-close-chat-emoji" id="btn-close-chat-emoji"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="chat-emoji-grid" id="chat-emoji-grid"></div>
+      </div>
+
       <form class="chat-room-input-form" id="chat-main-input-form">
         <input type="text" placeholder="${isDMAllowed ? '輸入訊息...' : '🔒 雙方至少需要有一方追蹤對方才能傳送訊息'}" class="chat-room-input" id="chat-main-input-field" required autocomplete="off" ${isDMAllowed ? '' : 'disabled'}>
+        <button type="button" class="chat-emoji-trigger-btn" id="btn-chat-emoji-trigger" ${isDMAllowed ? '' : 'disabled'} title="插入表情符號">
+          <i class="fa-regular fa-face-smile"></i>
+        </button>
         <button type="submit" class="chat-room-send-btn" title="發送訊息" ${isDMAllowed ? '' : 'disabled'} style="${isDMAllowed ? '' : 'opacity: 0.5; cursor: not-allowed;'}">
           <i class="fa-solid fa-paper-plane"></i>
         </button>
@@ -3320,6 +3332,42 @@ function renderChatMainRoom() {
   const cancelReplyBtn = document.getElementById('btn-chat-reply-cancel');
   if (cancelReplyBtn) {
     cancelReplyBtn.addEventListener('click', clearReplyMessage);
+  }
+  
+  // Bind Chat Emoji Trigger Button
+  const emojiTriggerBtn = document.getElementById('btn-chat-emoji-trigger');
+  const chatEmojiPicker = document.getElementById('chat-emoji-picker');
+  const closeChatEmojiBtn = document.getElementById('btn-close-chat-emoji');
+  
+  if (emojiTriggerBtn && chatEmojiPicker) {
+    emojiTriggerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isVisible = chatEmojiPicker.style.display === 'flex';
+      chatEmojiPicker.style.display = isVisible ? 'none' : 'flex';
+      if (!isVisible) {
+        initChatEmojiPicker();
+      }
+    });
+  }
+  
+  if (closeChatEmojiBtn && chatEmojiPicker) {
+    closeChatEmojiBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      chatEmojiPicker.style.display = 'none';
+    });
+  }
+  
+  // Close chat emoji picker when clicking anywhere else
+  document.addEventListener('click', () => {
+    const picker = document.getElementById('chat-emoji-picker');
+    if (picker) picker.style.display = 'none';
+  });
+  
+  // Prevent closing when clicking inside the picker
+  if (chatEmojiPicker) {
+    chatEmojiPicker.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
   }
   
   // Start messages real-time sync for this room
@@ -3537,4 +3585,33 @@ function markMessagesAsRead(contactHandle) {
       batch.commit().catch(err => console.error("Error marking read batch:", err));
     })
     .catch(err => console.error("Error getting unread messages to mark:", err));
+}
+
+function initChatEmojiPicker() {
+  const emojiGrid = document.getElementById('chat-emoji-grid');
+  if (!emojiGrid) return;
+  
+  emojiGrid.innerHTML = '';
+  EMOJI_CATEGORIES.forEach(category => {
+    category.emojis.forEach(emoji => {
+      const span = document.createElement('span');
+      span.className = 'chat-emoji-item';
+      span.textContent = emoji;
+      span.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const inputField = document.getElementById('chat-main-input-field');
+        if (inputField) {
+          const start = inputField.selectionStart;
+          const end = inputField.selectionEnd;
+          const text = inputField.value;
+          inputField.value = text.slice(0, start) + emoji + text.slice(end);
+          inputField.selectionStart = inputField.selectionEnd = start + emoji.length;
+          inputField.focus();
+        }
+        const picker = document.getElementById('chat-emoji-picker');
+        if (picker) picker.style.display = 'none';
+      });
+      emojiGrid.appendChild(span);
+    });
+  });
 }
