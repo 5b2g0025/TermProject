@@ -3694,17 +3694,20 @@ function initChatEmojiPicker() {
   });
 }
 
-// Preset animated GIFs for fallback
+// Preset animated GIFs from memes.tw
 const PRESET_GIFS = [
-  "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMzFkYTcxOWRkYTJiMjRkMTk4NzgyYTAwMmFiNzlmMTRkOTQyMzMyMCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3NtY188QaxDdC/giphy.gif",
-  "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMThjMmQ3ZDYzNWZlMTJjNTFjYmUzZTkwMzZiYWM4YzA4OWE3YzJhZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/t3s34JmEB81Da/giphy.gif",
-  "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMjhjZDhmMzRiNDlkZjE0NjFiOGVhMWZmMzBjOTM4ZTQ1NTE4MTcxMyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/L95W4Mxs8YQB2/giphy.gif",
-  "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNmNmMmE1MTlkMzY0MmIxNjBjYzRhMThlNTMwOTYyMjcxNDk3OWRiNyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/kEKcOWl8RMLde/giphy.gif",
-  "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOWQ4Zjg3ZWFkMzk5ZTA0NThlZTNjMTM4YzZkYWVmZDFlZjZlMDkxNSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/13CoXDiaCcC2EA/giphy.gif",
-  "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZTAwOWRkMjg4NzZhOTlkYzFjYThkMTRlZjViYmVmOGU4MDc4YWYyNSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/cuPm4A4ypgSIo/giphy.gif",
-  "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExODg1YTMyMTJhZmNlZTQ2NDk3YWY1YjgxYzA4NDAwMmRiMTdmYTcxMiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/XIqCQx02E1U9W/giphy.gif",
-  "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNGIyOTI4ZDE5YzQ0MGQxMTNkNTYwMzQ1ZTMyMTZhNDY4YWFiNmU1MiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/C21GGDOpKT6Zq/giphy.gif",
-  "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYTY3ODViNjg3ZjM2YTk3MGRjYTc1MDJkMmFlYzcyNDliODUxMGE1MCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/xT0xeJpD8eKoMTk56E/giphy.gif"
+  "https://memeprod.ap-south-1.linodeobjects.com/user-gif-thumbnail/4b34911ea8094681399225453cae56cb.gif",
+  "https://memeprod.ap-south-1.linodeobjects.com/user-gif-thumbnail/0d3553e9b941c93334776ab717cfcb8b.gif",
+  "https://memeprod.ap-south-1.linodeobjects.com/user-gif-thumbnail/48407d0b4fb30acf883db2ac74dbc3c2.gif",
+  "https://memeprod.ap-south-1.linodeobjects.com/user-gif-thumbnail/0205a2fbd5e582d17e0355a14bc57407.gif",
+  "https://memeprod.ap-south-1.linodeobjects.com/user-gif-thumbnail/f0e8f0e773fcaf14b2d62424f361e2d4.gif",
+  "https://memeprod.ap-south-1.linodeobjects.com/user-gif-thumbnail/7a125132fc9340e31ea1e0f944d10477.gif",
+  "https://memeprod.ap-south-1.linodeobjects.com/user-gif-thumbnail/aa9dc17ce3da9537067dd301e8292332.gif",
+  "https://memeprod.ap-south-1.linodeobjects.com/user-gif-thumbnail/1d52a23dfe66c7fa34e594d4fcdec605.gif",
+  "https://memeprod.ap-south-1.linodeobjects.com/user-gif-thumbnail/c48a4ca2eb91060232ac136193cb6659.gif",
+  "https://memeprod.ap-south-1.linodeobjects.com/user-gif-thumbnail/379f016d3df0a601f287ea28e62faee7.gif",
+  "https://memeprod.ap-south-1.linodeobjects.com/user-gif-thumbnail/52d287bbd49607eb3e7bde37b0bf5700.gif",
+  "https://memeprod.ap-south-1.linodeobjects.com/user-gif-thumbnail/16f425cbea3e442b126814989dbe629c.gif"
 ];
 
 async function fetchGIFs(query = '') {
@@ -3713,17 +3716,42 @@ async function fetchGIFs(query = '') {
   
   grid.innerHTML = '<div style="grid-column: span 2; text-align: center; font-size: 11px; color: var(--text-muted); padding: 20px;">載入中...</div>';
   
-  const apiKey = 'dc6zaTOxFJmzC';
-  const limit = 20;
-  const url = query.trim() 
-    ? `https://api.giphy.com/v1/gifs/search?api_key=${apiKey}&q=${encodeURIComponent(query)}&limit=${limit}`
-    : `https://api.giphy.com/v1/gifs/trending?api_key=${apiKey}&limit=${limit}`;
+  const targetUrl = query.trim() 
+    ? `https://memes.tw/gif?q=${encodeURIComponent(query)}`
+    : `https://memes.tw/gif`;
     
+  const proxies = [
+    `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`,
+    `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
+  ];
+  
+  let htmlContent = '';
+  for (const proxyUrl of proxies) {
+    try {
+      const res = await fetch(proxyUrl);
+      if (!res.ok) continue;
+      if (proxyUrl.includes('allorigins')) {
+        const json = await res.json();
+        htmlContent = json.contents;
+      } else {
+        htmlContent = await res.text();
+      }
+      if (htmlContent && htmlContent.includes('memeprod')) {
+        break; // Success
+      }
+    } catch (e) {
+      console.warn("Proxy fetch failed:", proxyUrl, e);
+    }
+  }
+  
   try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("Giphy API error");
-    const json = await res.json();
-    const gifs = json.data;
+    if (!htmlContent) {
+      throw new Error("All proxies failed to fetch content");
+    }
+    
+    // Extract GIF URLs from the HTML
+    const matches = htmlContent.match(/https:\/\/memeprod\.[^"\s']+\.gif/g) || [];
+    const gifs = [...new Set(matches)];
     
     grid.innerHTML = '';
     if (gifs.length === 0) {
@@ -3731,21 +3759,21 @@ async function fetchGIFs(query = '') {
       return;
     }
     
-    gifs.forEach(gif => {
+    gifs.forEach(url => {
       const img = document.createElement('img');
       img.className = 'chat-gif-item';
-      img.src = gif.images.fixed_height.url;
-      img.alt = gif.title;
+      img.src = url;
+      img.alt = "Meme GIF";
       img.loading = "lazy";
       img.addEventListener('click', () => {
-        sendChatMainMessage('[GIF]', gif.images.fixed_height.url);
+        sendChatMainMessage('[GIF]', url);
         const picker = document.getElementById('chat-gif-picker');
         if (picker) picker.style.display = 'none';
       });
       grid.appendChild(img);
     });
   } catch (err) {
-    console.warn("Giphy API fetch failed, falling back to preset GIFs:", err);
+    console.warn("Failed to scrape memes.tw, falling back to presets:", err);
     renderPresetGIFs();
   }
 }
