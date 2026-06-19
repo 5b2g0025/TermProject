@@ -1578,15 +1578,6 @@ function renderRecommendations() {
   const followingList = Array.isArray(currentUser.following) ? currentUser.following : [];
   const followedUsers = RECOMMENDED_USERS.filter(user => followingList.includes(user.handle));
 
-  if (isLoggedIn()) {
-    const summary = document.createElement('div');
-    summary.className = 'follow-summary';
-    summary.innerHTML = followedUsers.length > 0 ?
-      `<strong>你正在追蹤：${followedUsers.map(u => u.handle).join('、')}</strong>` :
-      `<span>你尚未追蹤任何人，點擊右側按鈕開始追蹤。</span>`;
-    elements.recommendationsList.appendChild(summary);
-  }
-
   RECOMMENDED_USERS.forEach(user => {
     const item = document.createElement('div');
     item.className = 'follow-item';
