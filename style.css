@@ -1856,94 +1856,7 @@ button[disabled] {
 /* ==========================================
    9. RESPONSIVE DESIGN (MEDIA QUERIES)
    ========================================== */
-@media (max-width: 1200px) {
-  .app-container {
-    grid-template-columns: var(--sidebar-width) 1fr;
-  }
-
-  .widgets {
-    display: none;
-    /* Hide widgets column on medium screens, can access tabs in header */
-  }
-}
-
-@media (max-width: 768px) {
-  body {
-    padding-bottom: 80px;
-    /* Space for mobile nav */
-  }
-
-  .app-container {
-    grid-template-columns: 1fr;
-    padding: 16px;
-    gap: 16px;
-  }
-
-  .sidebar {
-    position: static;
-    width: 100%;
-    max-height: none;
-    overflow-y: visible;
-    padding-right: 0;
-  }
-
-  .sidebar-menu {
-    flex-direction: row;
-    overflow-x: auto;
-    padding: 6px;
-    background: var(--glass-bg);
-    border-radius: var(--border-radius-md);
-  }
-
-  .sidebar-menu .footer-widget {
-    margin-top: 0;
-    border-top: none;
-    padding: 4px 12px;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 4px;
-    align-items: center;
-  }
-
-  .menu-item {
-    flex-direction: column;
-    align-items: center;
-    padding: 8px 12px;
-    font-size: 11px;
-    flex: 1;
-    min-width: 70px;
-    text-align: center;
-    gap: 4px;
-  }
-
-  .menu-item i {
-    font-size: 16px;
-  }
-
-  .menu-item:hover i {
-    transform: none;
-  }
-
-  .create-post-footer {
-    margin-left: 0;
-  }
-
-  .create-post-attachments {
-    margin-left: 0;
-  }
-
-  .header-top {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .search-container {
-    max-width: 100%;
-  }
-}
+/* Responsive design disabled per user request to keep layout identical across all devices */
 
 /* ==========================================
    10. AUTHENTICATION MODULE (LOGIN / REGISTER)
@@ -3196,27 +3109,7 @@ button[disabled] {
   box-shadow: 0 6px 16px rgba(168, 85, 247, 0.35);
 }
 
-/* Mobile adjustments */
-@media (max-width: 768px) {
-  .chat-main-layout {
-    height: 500px;
-  }
-  .chat-sidebar-users {
-    width: 80px;
-  }
-  .chat-users-header span,
-  .chat-user-item-info {
-    display: none;
-  }
-  .chat-users-header {
-    justify-content: center;
-    padding: 12px;
-  }
-  .chat-user-item {
-    justify-content: center;
-    padding: 8px;
-  }
-}
+/* Mobile adjustments disabled per user request */
 
 /* 滑桿外層容器 (此為 input range 滑桿樣式，如需使用可於 HTML 中新增對應結構) */
 .sidebar-slider-group {
