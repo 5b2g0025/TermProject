@@ -888,7 +888,10 @@ function initEventListeners() {
   }
 
   // 左側導覽列切換
-  elements.menuFeed.addEventListener('click', () => switchMenu('feed'));
+  elements.menuFeed.addEventListener('click', () => {
+    switchMenu('feed');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
   if (elements.menuChat) {
     elements.menuChat.addEventListener('click', () => switchMenu('chat'));
   }
