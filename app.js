@@ -3699,7 +3699,14 @@ let localMemesCached = null;
 async function loadLocalMemes() {
   if (localMemesCached) return localMemesCached;
   try {
-    const res = await fetch('memes_db.json');
+    let basePath = window.location.pathname;
+    if (basePath.endsWith('.html')) {
+      basePath = basePath.substring(0, basePath.lastIndexOf('/') + 1);
+    } else if (!basePath.endsWith('/')) {
+      basePath = basePath + '/';
+    }
+    const jsonUrl = window.location.origin + basePath + 'memes_db.json';
+    const res = await fetch(jsonUrl);
     if (res.ok) {
       localMemesCached = await res.json();
       return localMemesCached;
