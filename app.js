@@ -1537,10 +1537,14 @@ function renderPosts() {
     const deleteBtn = card.querySelector('.btn-delete-post');
     if (deleteBtn) {
       deleteBtn.addEventListener('click', () => {
-        posts = posts.filter(p => p.id !== post.id);
-        persistPosts();
-        renderApp();
-        showToast('貼文已刪除');
+        db.collection('posts').doc(post.id).delete()
+          .then(() => {
+            showToast('貼文已刪除');
+          })
+          .catch((err) => {
+            console.error("Error deleting post:", err);
+            showToast('❌ 刪除貼文失敗');
+          });
       });
     }
 
@@ -2263,11 +2267,15 @@ function openAuthorModal(handle, triggerEl) {
     if (currentUser.handle === p.authorHandle) {
       const btn = div.querySelector('button');
       btn.addEventListener('click', () => {
-        posts = posts.filter(item => item.id !== p.id);
-        persistPosts();
-        renderApp();
-        closeModal(elements.authorModal);
-        showToast('貼文已刪除');
+        db.collection('posts').doc(p.id).delete()
+          .then(() => {
+            closeModal(elements.authorModal);
+            showToast('貼文已刪除');
+          })
+          .catch((err) => {
+            console.error("Error deleting post:", err);
+            showToast('❌ 刪除貼文失敗');
+          });
       });
     }
     elements.authorModalBody.appendChild(div);
