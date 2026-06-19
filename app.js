@@ -3239,7 +3239,21 @@ function renderChatMainRoom() {
         <div class="chat-emoji-grid" id="chat-emoji-grid"></div>
       </div>
 
+      <!-- Chat GIF Picker Popup -->
+      <div class="chat-gif-picker-popup" id="chat-gif-picker" style="display: none;">
+        <div class="chat-gif-picker-header">
+          <span>選擇 GIF 動圖</span>
+          <button type="button" class="btn-close-chat-gif" id="btn-close-chat-gif"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="chat-gif-search-container">
+          <input type="text" placeholder="搜尋 GIPHY..." class="chat-gif-search-input" id="chat-gif-search-field">
+          <i class="fa-solid fa-magnifying-glass chat-gif-search-icon"></i>
+        </div>
+        <div class="chat-gif-grid" id="chat-gif-grid"></div>
+      </div>
+
       <form class="chat-room-input-form" id="chat-main-input-form">
+        <button type="button" class="chat-gif-trigger-btn" id="btn-chat-gif-trigger" ${isDMAllowed ? '' : 'disabled'} title="傳送 GIF 動圖">GIF</button>
         <input type="text" placeholder="${isDMAllowed ? '輸入訊息...' : '🔒 雙方至少需要有一方追蹤對方才能傳送訊息'}" class="chat-room-input" id="chat-main-input-field" required autocomplete="off" ${isDMAllowed ? '' : 'disabled'}>
         <button type="button" class="chat-emoji-trigger-btn" id="btn-chat-emoji-trigger" ${isDMAllowed ? '' : 'disabled'} title="插入表情符號">
           <i class="fa-regular fa-face-smile"></i>
@@ -3344,6 +3358,8 @@ function renderChatMainRoom() {
       e.stopPropagation();
       const isVisible = chatEmojiPicker.style.display === 'flex';
       chatEmojiPicker.style.display = isVisible ? 'none' : 'flex';
+      const chatGifPicker = document.getElementById('chat-gif-picker');
+      if (chatGifPicker) chatGifPicker.style.display = 'none';
       if (!isVisible) {
         initChatEmojiPicker();
       }
@@ -3357,16 +3373,61 @@ function renderChatMainRoom() {
     });
   }
   
-  // Close chat emoji picker when clicking anywhere else
+  // Close pickers when clicking anywhere else
   document.addEventListener('click', () => {
     const picker = document.getElementById('chat-emoji-picker');
     if (picker) picker.style.display = 'none';
+    const gifPicker = document.getElementById('chat-gif-picker');
+    if (gifPicker) gifPicker.style.display = 'none';
   });
   
   // Prevent closing when clicking inside the picker
   if (chatEmojiPicker) {
     chatEmojiPicker.addEventListener('click', (e) => {
       e.stopPropagation();
+    });
+  }
+
+  // Bind Chat GIF Trigger Button
+  const gifTriggerBtn = document.getElementById('btn-chat-gif-trigger');
+  const chatGifPicker = document.getElementById('chat-gif-picker');
+  const closeChatGifBtn = document.getElementById('btn-close-chat-gif');
+  const gifSearchField = document.getElementById('chat-gif-search-field');
+  
+  if (gifTriggerBtn && chatGifPicker) {
+    gifTriggerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isVisible = chatGifPicker.style.display === 'flex';
+      chatGifPicker.style.display = isVisible ? 'none' : 'flex';
+      if (chatEmojiPicker) chatEmojiPicker.style.display = 'none';
+      if (!isVisible) {
+        if (gifSearchField) gifSearchField.value = '';
+        fetchGIFs(''); // Load trending initially
+      }
+    });
+  }
+  
+  if (closeChatGifBtn && chatGifPicker) {
+    closeChatGifBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      chatGifPicker.style.display = 'none';
+    });
+  }
+  
+  if (chatGifPicker) {
+    chatGifPicker.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  }
+  
+  if (gifSearchField) {
+    let searchTimeout = null;
+    gifSearchField.addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        const query = gifSearchField.value.trim();
+        fetchGIFs(query);
+      }, 400);
     });
   }
   
@@ -3434,9 +3495,22 @@ function startChatMainListener() {
             bubble.appendChild(quoteDiv);
           }
           
-          const textSpan = document.createElement('span');
-          textSpan.textContent = msg.text;
-          bubble.appendChild(textSpan);
+          if (msg.gif) {
+            const img = document.createElement('img');
+            img.src = msg.gif;
+            img.style.cssText = "max-width: 100%; border-radius: 12px; display: block; max-height: 180px; object-fit: cover;";
+            img.alt = "GIF";
+            img.loading = "lazy";
+            bubble.appendChild(img);
+            bubble.style.padding = '8px';
+            bubble.style.background = 'transparent';
+            bubble.style.border = 'none';
+            img.style.border = '1px solid var(--glass-border)';
+          } else {
+            const textSpan = document.createElement('span');
+            textSpan.textContent = msg.text;
+            bubble.appendChild(textSpan);
+          }
           
           if (isSentByMe) {
             row.appendChild(replyBtn);
@@ -3466,8 +3540,8 @@ function startChatMainListener() {
     });
 }
 
-function sendChatMainMessage(text) {
-  if (!currentChatMainTarget || !text.trim() || !currentUser) return;
+function sendChatMainMessage(text, gifUrl = null) {
+  if (!currentChatMainTarget || (!text.trim() && !gifUrl) || !currentUser) return;
   
   const msgObj = {
     senderHandle: currentUser.handle,
@@ -3478,6 +3552,10 @@ function sendChatMainMessage(text) {
     timestamp: new Date().toISOString(),
     isRead: false
   };
+  
+  if (gifUrl) {
+    msgObj.gif = gifUrl;
+  }
   
   if (currentReplyMessage) {
     msgObj.replyToUser = currentReplyMessage.user;
@@ -3613,5 +3691,81 @@ function initChatEmojiPicker() {
       });
       emojiGrid.appendChild(span);
     });
+  });
+}
+
+// Preset animated GIFs for fallback
+const PRESET_GIFS = [
+  "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMzFkYTcxOWRkYTJiMjRkMTk4NzgyYTAwMmFiNzlmMTRkOTQyMzMyMCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3NtY188QaxDdC/giphy.gif",
+  "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMThjMmQ3ZDYzNWZlMTJjNTFjYmUzZTkwMzZiYWM4YzA4OWE3YzJhZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/t3s34JmEB81Da/giphy.gif",
+  "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMjhjZDhmMzRiNDlkZjE0NjFiOGVhMWZmMzBjOTM4ZTQ1NTE4MTcxMyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/L95W4Mxs8YQB2/giphy.gif",
+  "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNmNmMmE1MTlkMzY0MmIxNjBjYzRhMThlNTMwOTYyMjcxNDk3OWRiNyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/kEKcOWl8RMLde/giphy.gif",
+  "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOWQ4Zjg3ZWFkMzk5ZTA0NThlZTNjMTM4YzZkYWVmZDFlZjZlMDkxNSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/13CoXDiaCcC2EA/giphy.gif",
+  "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZTAwOWRkMjg4NzZhOTlkYzFjYThkMTRlZjViYmVmOGU4MDc4YWYyNSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/cuPm4A4ypgSIo/giphy.gif",
+  "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExODg1YTMyMTJhZmNlZTQ2NDk3YWY1YjgxYzA4NDAwMmRiMTdmYTcxMiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/XIqCQx02E1U9W/giphy.gif",
+  "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNGIyOTI4ZDE5YzQ0MGQxMTNkNTYwMzQ1ZTMyMTZhNDY4YWFiNmU1MiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/C21GGDOpKT6Zq/giphy.gif",
+  "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYTY3ODViNjg3ZjM2YTk3MGRjYTc1MDJkMmFlYzcyNDliODUxMGE1MCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/xT0xeJpD8eKoMTk56E/giphy.gif"
+];
+
+async function fetchGIFs(query = '') {
+  const grid = document.getElementById('chat-gif-grid');
+  if (!grid) return;
+  
+  grid.innerHTML = '<div style="grid-column: span 2; text-align: center; font-size: 11px; color: var(--text-muted); padding: 20px;">載入中...</div>';
+  
+  const apiKey = 'dc6zaTOxFJmzC';
+  const limit = 20;
+  const url = query.trim() 
+    ? `https://api.giphy.com/v1/gifs/search?api_key=${apiKey}&q=${encodeURIComponent(query)}&limit=${limit}`
+    : `https://api.giphy.com/v1/gifs/trending?api_key=${apiKey}&limit=${limit}`;
+    
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Giphy API error");
+    const json = await res.json();
+    const gifs = json.data;
+    
+    grid.innerHTML = '';
+    if (gifs.length === 0) {
+      grid.innerHTML = '<div style="grid-column: span 2; text-align: center; font-size: 11px; color: var(--text-muted); padding: 20px;">找不到相關 GIF</div>';
+      return;
+    }
+    
+    gifs.forEach(gif => {
+      const img = document.createElement('img');
+      img.className = 'chat-gif-item';
+      img.src = gif.images.fixed_height.url;
+      img.alt = gif.title;
+      img.loading = "lazy";
+      img.addEventListener('click', () => {
+        sendChatMainMessage('[GIF]', gif.images.fixed_height.url);
+        const picker = document.getElementById('chat-gif-picker');
+        if (picker) picker.style.display = 'none';
+      });
+      grid.appendChild(img);
+    });
+  } catch (err) {
+    console.warn("Giphy API fetch failed, falling back to preset GIFs:", err);
+    renderPresetGIFs();
+  }
+}
+
+function renderPresetGIFs() {
+  const grid = document.getElementById('chat-gif-grid');
+  if (!grid) return;
+  
+  grid.innerHTML = '';
+  PRESET_GIFS.forEach(url => {
+    const img = document.createElement('img');
+    img.className = 'chat-gif-item';
+    img.src = url;
+    img.alt = "Preset GIF";
+    img.loading = "lazy";
+    img.addEventListener('click', () => {
+      sendChatMainMessage('[GIF]', url);
+      const picker = document.getElementById('chat-gif-picker');
+      if (picker) picker.style.display = 'none';
+    });
+    grid.appendChild(img);
   });
 }
