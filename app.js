@@ -1907,6 +1907,7 @@ function updateAuthUI() {
   // 重新渲染與刷新計數器
   updateStatsCounter();
   updatePostFormState();
+  startGlobalMessagesListener();
 }
 
 function syncCurrentUserPosts(handle, username, avatar) {
@@ -3084,6 +3085,8 @@ function escapeHTML(str) {
 let currentChatMainTarget = null;
 let chatMainListener = null;
 let currentReplyMessage = null;
+let globalMessagesListener = null;
+let unreadCounts = {};
 
 function renderChatMainPage() {
   elements.postsFeed.innerHTML = `
@@ -3143,11 +3146,16 @@ function renderChatMainUsersList() {
     item.style.cursor  = 'pointer';
     
     const avatarSrc = user.avatar || getFallbackAvatar(user.handle);
+    const count = unreadCounts[user.handle] || 0;
+    const badgeHtml = count > 0 ? `<span class="chat-unread-badge">${count}</span>` : '';
     
     item.innerHTML = `
       <img src="${avatarSrc}" alt="avatar" class="chat-user-item-avatar">
       <div class="chat-user-item-info">
-        <span class="chat-user-item-name">${escapeHTML(user.username)}</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+          <span class="chat-user-item-name">${escapeHTML(user.username)}</span>
+          ${badgeHtml}
+        </div>
         <span class="chat-user-item-handle">${escapeHTML(user.handle)}</span>
         ${isLocked ? '<span style="font-size:10px;color:var(--text-muted);">🔒 需要互追才能私訊</span>' : '<span style="font-size:10px;color:var(--tag-text);">💬 可以私訊</span>'}
       </div>
@@ -3349,6 +3357,10 @@ function startChatMainListener() {
         if (isSentByMe || isReceivedByMe) {
           hasMessages = true;
           
+          if (isReceivedByMe && msg.isRead !== true) {
+            db.collection('messages').doc(doc.id).update({ isRead: true }).catch(e => {});
+          }
+          
           const row = document.createElement('div');
           row.className = `chat-message-row ${isSentByMe ? 'sent' : 'received'}`;
           
@@ -3415,7 +3427,8 @@ function sendChatMainMessage(text) {
     receiverHandle: currentChatMainTarget.handle,
     receiverName: currentChatMainTarget.username,
     text: text.trim(),
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    isRead: false
   };
   
   if (currentReplyMessage) {
@@ -3461,4 +3474,55 @@ function clearReplyMessage() {
   if (previewBar) {
     previewBar.style.display = 'none';
   }
+}
+
+function startGlobalMessagesListener() {
+  if (globalMessagesListener) {
+    globalMessagesListener();
+    globalMessagesListener = null;
+  }
+  unreadCounts = {};
+
+  const loggedInUser = localStorage.getItem('aurawall_logged_in_user');
+  if (!loggedInUser) return;
+  const user = JSON.parse(loggedInUser);
+
+  globalMessagesListener = db.collection('messages')
+    .onSnapshot((snapshot) => {
+      unreadCounts = {};
+      snapshot.forEach((doc) => {
+        const msg = doc.data();
+        if (msg.receiverHandle === user.handle && msg.isRead !== true) {
+          if (currentChatMainTarget && currentChatMainTarget.handle === msg.senderHandle && currentMenuTab === 'chat') {
+            db.collection('messages').doc(doc.id).update({ isRead: true }).catch(err => {});
+          } else {
+            unreadCounts[msg.senderHandle] = (unreadCounts[msg.senderHandle] || 0) + 1;
+          }
+        }
+      });
+      if (currentMenuTab === 'chat') {
+        renderChatMainUsersList();
+      }
+    }, (err) => {
+      console.error("Error listening to global messages:", err);
+    });
+}
+
+function markMessagesAsRead(contactHandle) {
+  if (!currentUser || !currentUser.handle || !contactHandle) return;
+  
+  db.collection('messages')
+    .where('senderHandle', '==', contactHandle)
+    .where('receiverHandle', '==', currentUser.handle)
+    .where('isRead', '==', false)
+    .get()
+    .then((snapshot) => {
+      if (snapshot.empty) return;
+      const batch = db.batch();
+      snapshot.forEach((doc) => {
+        batch.update(doc.ref, { isRead: true });
+      });
+      batch.commit().catch(err => console.error("Error marking read batch:", err));
+    })
+    .catch(err => console.error("Error getting unread messages to mark:", err));
 }
