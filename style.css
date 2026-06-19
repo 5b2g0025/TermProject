@@ -2755,18 +2755,15 @@ button[disabled] {
   background: transparent;
   border: none;
   color: var(--text-muted);
-  opacity: 0;
+  opacity: 0.6;
   transition: opacity 0.2s, color 0.2s, transform 0.2s;
   cursor: pointer;
   padding: 4px;
   font-size: 14px;
 }
-.chat-message-row:hover .chat-reply-btn {
-  opacity: 0.6;
-}
 .chat-reply-btn:hover {
-  opacity: 1 !important;
-  color: var(--tag-text);
+  opacity: 1;
+  color: #8b5cf6;
   transform: scale(1.15);
 }
 
